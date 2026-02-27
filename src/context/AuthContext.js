@@ -3,8 +3,19 @@ import api from '../api/axios';
 
 const AuthContext = createContext();
 
+const decodeToken = (token) => {
+    try {
+        const payload = token.split('.')[1];
+        return JSON.parse(atob(payload));
+    } catch (error) {
+        console.error("Failed to decode token:", error);
+        return null;
+    }
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [userRole, setUserRole] = useState(null);
     const [authTokens, setAuthTokens] = useState(() => {
         const access = localStorage.getItem('access_token');
         const refresh = localStorage.getItem('refresh_token');
@@ -18,10 +29,20 @@ export const AuthProvider = ({ children }) => {
             if (response.status === 200) {
                 const { access, refresh } = response.data;
                 setAuthTokens({ access, refresh });
-                setUser({ email }); // You might decode the token here to get user ID or name
                 localStorage.setItem('access_token', access);
                 localStorage.setItem('refresh_token', refresh);
-                return { success: true };
+                
+                const decoded = decodeToken(access);
+                if (decoded) {
+                    const role = decoded.primary_role || decoded.role || null;
+                    setUserRole(role);
+                    setUser({ 
+                        email, 
+                        user_id: decoded.user_id,
+                        primary_role: role 
+                    });
+                }
+                return { success: true, role: userRole };
             }
         } catch (error) {
             console.error("Login failed:", error);
@@ -33,7 +54,7 @@ export const AuthProvider = ({ children }) => {
         const refresh = localStorage.getItem('refresh_token');
         if (refresh) {
             try {
-                await api.post('api/token/blacklist/', { refresh });
+                await api.post('/api/token/blacklist/', { refresh });
             } catch (error) {
                 console.error("Blacklist failed", error);
             }
@@ -41,24 +62,33 @@ export const AuthProvider = ({ children }) => {
 
         setAuthTokens(null);
         setUser(null);
+        setUserRole(null);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
     };
 
     useEffect(() => {
-        // Here you could verify the token validity on mount if needed
-        // Or decode the token to set the user state
         const access = localStorage.getItem('access_token');
         if (access) {
-            // Placeholder: Set user state if token exists. 
-            // In a real app, decode the JWT payload to get user details.
-            setUser({ loggedIn: true });
+            const decoded = decodeToken(access);
+            if (decoded) {
+                const role = decoded.primary_role || decoded.role || null;
+                setUserRole(role);
+                setUser({ 
+                    loggedIn: true, 
+                    user_id: decoded.user_id,
+                    primary_role: role 
+                });
+            } else {
+                setUser({ loggedIn: true });
+            }
         }
         setLoading(false);
     }, []);
 
     const contextData = {
         user,
+        userRole,
         authTokens,
         loginUser,
         logoutUser,

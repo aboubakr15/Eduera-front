@@ -6,7 +6,7 @@ import log from "../assets/images/login.jpg";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { loginUser } = useAuth();
+  const { loginUser, logoutUser } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -17,16 +17,28 @@ const Login = () => {
     setError("");
     setIsLoading(true);
 
-    setTimeout(async () => {
+    try {
       const result = await loginUser(email, password);
-      // ROLES HERE
       if (result.success) {
-        navigate("/admin/dashboard");
+        const access = localStorage.getItem('access_token');
+        const payload = access ? JSON.parse(atob(access.split('.')[1])) : null;
+        const role = payload?.primary_role || payload?.role;
+        
+        if (role === 'ADMIN') {
+          navigate("/admin/dashboard");
+        } else {
+          setError("Access denied. Admin role required.");
+          logoutUser();
+          setIsLoading(false);
+        }
       } else {
         setError(result.error);
         setIsLoading(false);
       }
-    }, 800);
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (

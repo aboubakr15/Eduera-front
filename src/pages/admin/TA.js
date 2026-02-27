@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaPlus,
   FaSearch,
@@ -9,25 +9,11 @@ import {
   FaChevronDown,
   FaUserGraduate,
 } from "react-icons/fa";
-
-const initialTAs = Array.from({ length: 11 }, (_, i) => ({
-  id: i + 1,
-  name: "Niggro",
-  taId: "#1234",
-  title: "Teaching Assistant",
-  email: "n@yahoo.com",
-  department: [
-    "Computer Science",
-    "Artificial Intelligence",
-    "Information System",
-    "Software Engineering",
-  ][i % 4],
-  specialization: "Machine Learning & Data Science",
-  avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${i + 80}`,
-}));
+import { adminApi } from "../../api/adminApi";
 
 const TA = () => {
-  const [tas, setTAs] = useState(initialTAs);
+  const [tas, setTAs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All");
@@ -36,20 +22,18 @@ const TA = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [editingTA, setEditingTA] = useState(null);
   const [form, setForm] = useState({
-    name: "",
-    taId: "",
-    title: "",
+    username: "",
     email: "",
+    password: "",
+    full_name: "",
     department: "",
-    specialization: "",
   });
 
   const departments = [
-    "All",
-    "Computer Science",
-    "Artificial Intelligence",
-    "Information System",
-    "Software Engineering",
+    { id: 1, name: "Computer Science" },
+    { id: 2, name: "Artificial Intelligence" },
+    { id: 3, name: "Information System" },
+    { id: 4, name: "Software Engineering" },
   ];
 
   const titles = [
@@ -59,13 +43,29 @@ const TA = () => {
     "Research Assistant",
   ];
 
+  useEffect(() => {
+    fetchTAs();
+  }, [search, department]);
+
+  const fetchTAs = async () => {
+    try {
+      setLoading(true);
+      const response = await adminApi.getUsers('TA');
+      setTAs(response.data);
+    } catch (error) {
+      console.error("Failed to fetch TAs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const perPage = 8;
 
   const filtered = tas.filter((s) => {
     const matchSearch =
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.taId.includes(search);
-    const matchDept = department === "All" || s.department === department;
+      s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      s.email?.includes(search);
+    const matchDept = department === "All" || s.department?.id === parseInt(department) || s.department === parseInt(department);
     return matchSearch && matchDept;
   });
 
@@ -102,12 +102,11 @@ const TA = () => {
   const openAdd = () => {
     setEditingTA(null);
     setForm({
-      name: "",
-      taId: "",
-      title: "",
+      username: "",
       email: "",
+      password: "",
+      full_name: "",
       department: "",
-      specialization: "",
     });
     setShowModal(true);
   };
@@ -115,32 +114,32 @@ const TA = () => {
   const openEdit = (ta) => {
     setEditingTA(ta);
     setForm({
-      name: ta.name,
-      taId: ta.taId,
-      title: ta.title,
+      username: ta.username || "",
       email: ta.email,
+      password: "",
+      full_name: ta.full_name,
       department: ta.department,
-      specialization: ta.specialization,
     });
     setShowModal(true);
   };
 
-  const handleSave = () => {
-    if (!form.name || !form.email) return;
-    if (editingTA) {
-      setTAs((prev) =>
-        prev.map((s) => (s.id === editingTA.id ? { ...s, ...form } : s)),
-      );
-    } else {
-      const newId = Date.now();
-      setTAs((prev) => [
-        ...prev,
-        {
-          id: newId,
-          ...form,
-          avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${newId}`,
-        },
-      ]);
+  const handleSave = async () => {
+    if (!form.email) return;
+    
+    const payload = {
+      username: form.username || form.email.split('@')[0],
+      email: form.email,
+      password: form.password,
+      full_name: form.full_name,
+      department: parseInt(form.department) || 1,
+    };
+
+    try {
+      const response = await adminApi.createTA(payload);
+      setTAs((prev) => [...prev, response.data]);
+      setShowModal(false);
+    } catch (error) {
+      console.error("Failed to create TA:", error);
     }
     setShowModal(false);
   };
@@ -192,8 +191,9 @@ const TA = () => {
                 }}
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 outline-none cursor-pointer"
               >
+                <option key="all" value="All">All</option>
                 {departments.map((d) => (
-                  <option key={d}>{d}</option>
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
               <FaChevronDown
@@ -242,7 +242,16 @@ const TA = () => {
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading TAs...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
               <tr>
                 <td colSpan={9} className="text-center py-16 text-gray-300">
                   <FaUserGraduate
@@ -270,26 +279,23 @@ const TA = () => {
                   </td>
                   <td className="py-3 pl-2">
                     <img
-                      src={ta.avatar}
-                      alt={ta.name}
+                      src={ta.profile_picture_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${ta.id}`}
+                      alt={ta.full_name}
                       className="w-9 h-9 rounded-full bg-gray-100 object-cover"
                     />
                   </td>
                   <td className="py-3 px-2 font-semibold text-gray-800 text-sm">
-                    {ta.name}
+                    {ta.full_name}
                   </td>
-                  <td className="py-3 px-2 text-sm text-gray-400">{ta.taId}</td>
+                  <td className="py-3 px-2 text-sm text-gray-400">{ta.id}</td>
                   <td className="py-3 px-2 text-sm text-gray-400">
-                    {ta.title}
+                    {ta.title || "Teaching Assistant"}
                   </td>
                   <td className="py-3 px-2 text-sm text-gray-400">
                     {ta.email}
                   </td>
                   <td className="py-3 px-2 text-sm font-semibold text-gray-700">
-                    {ta.department}
-                  </td>
-                  <td className="py-3 px-2 text-sm font-semibold text-gray-700">
-                    {ta.specialization}
+                    {typeof ta.department === 'object' ? ta.department?.name : (departments.find(d => d.id === ta.department)?.name || ta.department || "-")}
                   </td>
                   <td className="py-3 pr-6 text-right">
                     <div className="flex items-center justify-end gap-3">
@@ -392,27 +398,27 @@ const TA = () => {
               {[
                 {
                   label: "Full Name",
-                  key: "name",
+                  key: "full_name",
                   type: "text",
-                  placeholder: "e.g. Shahd Shaban",
+                  placeholder: "e.g. Ahmed Mohamed",
                 },
                 {
-                  label: "TA ID",
-                  key: "taId",
+                  label: "Username",
+                  key: "username",
                   type: "text",
-                  placeholder: "e.g. #1234",
+                  placeholder: "e.g. ahmed_mohamed",
                 },
                 {
                   label: "Email",
                   key: "email",
                   type: "email",
-                  placeholder: "e.g. shahd@yahoo.com",
+                  placeholder: "e.g. ahmed@yahoo.com",
                 },
                 {
-                  label: "Specialization",
-                  key: "specialization",
-                  type: "text",
-                  placeholder: "e.g. Machine Learning & Data Science",
+                  label: "Password",
+                  key: "password",
+                  type: "password",
+                  placeholder: "e.g. **********",
                 },
               ].map(({ label, key, type, placeholder }) => (
                 <div key={key}>
@@ -468,11 +474,9 @@ const TA = () => {
                     className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
                   >
                     <option value="">Select Department</option>
-                    {departments
-                      .filter((d) => d !== "All")
-                      .map((d) => (
-                        <option key={d}>{d}</option>
-                      ))}
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
                   </select>
                   <FaChevronDown
                     size={11}

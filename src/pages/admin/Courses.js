@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaPlus,
   FaSearch,
@@ -9,22 +9,11 @@ import {
   FaChevronDown,
   FaBook,
 } from "react-icons/fa";
-
-const initialCourses = Array.from({ length: 11 }, (_, i) => ({
-  id: i + 1,
-  name: "Neural Network and Deep Learning",
-  code: "CS401",
-  duration: 3,
-  department: [
-    "Artificial Intelligence",
-    "Computer Science",
-    "Information System",
-    "Software Engineering",
-  ][i % 4],
-}));
+import { adminApi } from "../../api/adminApi";
 
 const Courses = () => {
-  const [courses, setCourses] = useState(initialCourses);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All");
@@ -35,25 +24,44 @@ const Courses = () => {
   const [form, setForm] = useState({
     name: "",
     code: "",
-    duration: "",
+    credit_hours: "",
     department: "",
+    description: "",
   });
 
   const departments = [
-    "All",
-    "Computer Science",
-    "Artificial Intelligence",
-    "Information System",
-    "Software Engineering",
+    { id: 1, name: "Computer Science" },
+    { id: 2, name: "Artificial Intelligence" },
+    { id: 3, name: "Information System" },
+    { id: 4, name: "Software Engineering" },
   ];
 
   const perPage = 8;
 
+  useEffect(() => {
+    fetchCourses();
+  }, [search, department]);
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (search) params.search = search;
+      if (department !== "All") params.department = department;
+      const response = await adminApi.getCourses(params);
+      setCourses(response.data);
+    } catch (error) {
+      console.error("Failed to fetch courses:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filtered = courses.filter((c) => {
     const matchSearch =
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.code.toLowerCase().includes(search.toLowerCase());
-    const matchDept = department === "All" || c.department === department;
+      c.name?.toLowerCase().includes(search.toLowerCase()) ||
+      c.code?.toLowerCase().includes(search.toLowerCase());
+    const matchDept = department === "All" || c.department?.id === parseInt(department) || c.department === parseInt(department);
     return matchSearch && matchDept;
   });
 
@@ -81,15 +89,20 @@ const Courses = () => {
     setConfirmDelete(course);
   };
 
-  const confirmDeleteCourse = () => {
-    setCourses((prev) => prev.filter((c) => c.id !== confirmDelete.id));
-    setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+  const confirmDeleteCourse = async () => {
+    try {
+      await adminApi.deleteCourse(confirmDelete.id);
+      setCourses((prev) => prev.filter((c) => c.id !== confirmDelete.id));
+      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+    } catch (error) {
+      console.error("Failed to delete course:", error);
+    }
     setConfirmDelete(null);
   };
 
   const openAdd = () => {
     setEditingCourse(null);
-    setForm({ name: "", code: "", duration: "", department: "" });
+    setForm({ name: "", code: "", credit_hours: "", department: "", description: "" });
     setShowModal(true);
   };
 
@@ -98,23 +111,38 @@ const Courses = () => {
     setForm({
       name: course.name,
       code: course.code,
-      duration: course.duration,
+      credit_hours: course.credit_hours || course.duration || "",
       department: course.department,
+      description: course.description || "",
     });
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.code) return;
-    if (editingCourse) {
-      setCourses((prev) =>
-        prev.map((c) => (c.id === editingCourse.id ? { ...c, ...form } : c)),
-      );
-    } else {
-      const newId = Date.now();
-      setCourses((prev) => [...prev, { id: newId, ...form }]);
+    
+    const payload = {
+      name: form.name,
+      code: form.code,
+      credit_hours: parseInt(form.credit_hours) || 3,
+      department: parseInt(form.department) || 1,
+      description: form.description,
+    };
+
+    try {
+      if (editingCourse) {
+        const response = await adminApi.updateCourse(editingCourse.id, payload);
+        setCourses((prev) =>
+          prev.map((c) => (c.id === editingCourse.id ? { ...c, ...response.data } : c)),
+        );
+      } else {
+        const response = await adminApi.createCourse(payload);
+        setCourses((prev) => [...prev, response.data]);
+      }
+      setShowModal(false);
+    } catch (error) {
+      console.error("Failed to save course:", error);
     }
-    setShowModal(false);
   };
 
   const pageIds = paginated.map((c) => c.id);
@@ -164,8 +192,9 @@ const Courses = () => {
                 }}
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 outline-none cursor-pointer"
               >
+                <option key="all" value="All">All</option>
                 {departments.map((d) => (
-                  <option key={d}>{d}</option>
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
               <FaChevronDown
@@ -194,7 +223,7 @@ const Courses = () => {
                 Code
               </th>
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
-                Duration (hours)
+                Credit Hours
               </th>
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
                 Department
@@ -205,7 +234,16 @@ const Courses = () => {
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading courses...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-16 text-gray-300">
                   <FaBook size={32} className="mx-auto mb-3 opacity-30" />
@@ -235,10 +273,10 @@ const Courses = () => {
                     {course.code}
                   </td>
                   <td className="py-3 px-2 text-sm text-gray-400">
-                    {course.duration}
+                    {course.credit_hours || course.duration || "-"}
                   </td>
                   <td className="py-3 px-2 text-sm font-semibold text-gray-700">
-                    {course.department}
+                    {typeof course.department === 'object' ? course.department?.name : (departments.find(d => d.id === course.department)?.name || course.department || "-")}
                   </td>
                   <td className="py-3 pr-6 text-right">
                     <div className="flex items-center justify-end gap-3">
@@ -352,8 +390,8 @@ const Courses = () => {
                   placeholder: "e.g. CS401",
                 },
                 {
-                  label: "Duration (hours)",
-                  key: "duration",
+                  label: "Credit Hours",
+                  key: "credit_hours",
                   type: "number",
                   placeholder: "e.g. 3",
                 },
@@ -389,9 +427,8 @@ const Courses = () => {
                   >
                     <option value="">Select Department</option>
                     {departments
-                      .filter((d) => d !== "All")
                       .map((d) => (
-                        <option key={d}>{d}</option>
+                        <option key={d.id} value={d.id}>{d.name}</option>
                       ))}
                   </select>
                   <FaChevronDown

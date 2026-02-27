@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaPlus,
   FaSearch,
@@ -9,25 +9,11 @@ import {
   FaChevronDown,
   FaUserTie,
 } from "react-icons/fa";
-
-const initialInstructors = Array.from({ length: 11 }, (_, i) => ({
-  id: i + 1,
-  name: "Niggro",
-  instructorId: "#1234",
-  title: "Assistant Professor",
-  email: "n@yahoo.com",
-  department: [
-    "Computer Science",
-    "Artificial Intelligence",
-    "Information System",
-    "Software Engineering",
-  ][i % 4],
-  specialization: "Machine Learning & Data Science",
-  avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${i + 50}`,
-}));
+import { adminApi } from "../../api/adminApi";
 
 const Instructors = () => {
-  const [instructors, setInstructors] = useState(initialInstructors);
+  const [instructors, setInstructors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All");
@@ -36,21 +22,35 @@ const Instructors = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [editingInstructor, setEditingInstructor] = useState(null);
   const [form, setForm] = useState({
-    name: "",
-    instructorId: "",
-    title: "",
+    username: "",
     email: "",
+    password: "",
+    full_name: "",
     department: "",
-    specialization: "",
   });
 
   const departments = [
-    "All",
-    "Computer Science",
-    "Artificial Intelligence",
-    "Information System",
-    "Software Engineering",
+    { id: 1, name: "Computer Science" },
+    { id: 2, name: "Artificial Intelligence" },
+    { id: 3, name: "Information System" },
+    { id: 4, name: "Software Engineering" },
   ];
+
+  useEffect(() => {
+    fetchInstructors();
+  }, [search, department]);
+
+  const fetchInstructors = async () => {
+    try {
+      setLoading(true);
+      const response = await adminApi.getUsers('PROFESSOR');
+      setInstructors(response.data);
+    } catch (error) {
+      console.error("Failed to fetch instructors:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const titles = [
     "Assistant Professor",
@@ -64,9 +64,9 @@ const Instructors = () => {
 
   const filtered = instructors.filter((s) => {
     const matchSearch =
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.instructorId.includes(search);
-    const matchDept = department === "All" || s.department === department;
+      s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      s.email?.includes(search);
+    const matchDept = department === "All" || s.department?.id === parseInt(department) || s.department === parseInt(department);
     return matchSearch && matchDept;
   });
 
@@ -103,12 +103,11 @@ const Instructors = () => {
   const openAdd = () => {
     setEditingInstructor(null);
     setForm({
-      name: "",
-      instructorId: "",
-      title: "",
+      username: "",
       email: "",
+      password: "",
+      full_name: "",
       department: "",
-      specialization: "",
     });
     setShowModal(true);
   };
@@ -116,37 +115,33 @@ const Instructors = () => {
   const openEdit = (instructor) => {
     setEditingInstructor(instructor);
     setForm({
-      name: instructor.name,
-      instructorId: instructor.instructorId,
-      title: instructor.title,
+      username: instructor.username || "",
       email: instructor.email,
-      department: instructor.department,
-      specialization: instructor.specialization,
+      password: "",
+      full_name: instructor.full_name,
       department: instructor.department,
     });
     setShowModal(true);
   };
 
-  const handleSave = () => {
-    if (!form.name || !form.email) return;
-    if (editingInstructor) {
-      setInstructors((prev) =>
-        prev.map((s) =>
-          s.id === editingInstructor.id ? { ...s, ...form } : s,
-        ),
-      );
-    } else {
-      const newId = Date.now();
-      setInstructors((prev) => [
-        ...prev,
-        {
-          id: newId,
-          ...form,
-          avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${newId}`,
-        },
-      ]);
+  const handleSave = async () => {
+    if (!form.email) return;
+    
+    const payload = {
+      username: form.username || form.email.split('@')[0],
+      email: form.email,
+      password: form.password,
+      full_name: form.full_name,
+      department: parseInt(form.department) || 1,
+    };
+
+    try {
+      const response = await adminApi.createInstructor(payload);
+      setInstructors((prev) => [...prev, response.data]);
+      setShowModal(false);
+    } catch (error) {
+      console.error("Failed to create instructor:", error);
     }
-    setShowModal(false);
   };
 
   const pageIds = paginated.map((s) => s.id);
@@ -196,8 +191,9 @@ const Instructors = () => {
                 }}
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 outline-none cursor-pointer"
               >
+                <option key="all" value="All">All</option>
                 {departments.map((d) => (
-                  <option key={d}>{d}</option>
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
               <FaChevronDown
@@ -246,7 +242,16 @@ const Instructors = () => {
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading instructors...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
               <tr>
                 <td colSpan={9} className="text-center py-16 text-gray-300">
                   <FaUserTie size={32} className="mx-auto mb-3 opacity-30" />
@@ -271,28 +276,25 @@ const Instructors = () => {
                   </td>
                   <td className="py-3 pl-2">
                     <img
-                      src={instructor.avatar}
-                      alt={instructor.name}
+                      src={instructor.profile_picture_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${instructor.id}`}
+                      alt={instructor.full_name}
                       className="w-9 h-9 rounded-full bg-gray-100 object-cover"
                     />
                   </td>
                   <td className="py-3 px-2 font-semibold text-gray-800 text-sm">
-                    {instructor.name}
+                    {instructor.full_name}
                   </td>
                   <td className="py-3 px-2 text-sm text-gray-400">
-                    {instructor.instructorId}
+                    {instructor.id}
                   </td>
                   <td className="py-3 px-2 text-sm text-gray-400">
-                    {instructor.title}
+                    {instructor.title || "Professor"}
                   </td>
                   <td className="py-3 px-2 text-sm text-gray-400">
                     {instructor.email}
                   </td>
                   <td className="py-3 px-2 text-sm font-semibold text-gray-700">
-                    {instructor.department}
-                  </td>
-                  <td className="py-3 px-2 text-sm font-semibold text-gray-700">
-                    {instructor.specialization}
+                    {typeof instructor.department === 'object' ? instructor.department?.name : (departments.find(d => d.id === instructor.department)?.name || instructor.department || "-")}
                   </td>
                   <td className="py-3 pr-6 text-right">
                     <div className="flex items-center justify-end gap-3">
@@ -395,27 +397,27 @@ const Instructors = () => {
               {[
                 {
                   label: "Full Name",
-                  key: "name",
+                  key: "full_name",
                   type: "text",
-                  placeholder: "e.g. Shahd Shaban",
+                  placeholder: "e.g. Dr. Salwa Osman",
                 },
                 {
-                  label: "Instructor ID",
-                  key: "instructorId",
+                  label: "Username",
+                  key: "username",
                   type: "text",
-                  placeholder: "e.g. #1234",
+                  placeholder: "e.g. salwa_osman",
                 },
                 {
                   label: "Email",
                   key: "email",
                   type: "email",
-                  placeholder: "e.g. shahd@yahoo.com",
+                  placeholder: "e.g. salwa@yahoo.com",
                 },
                 {
-                  label: "Specialization",
-                  key: "specialization",
-                  type: "text",
-                  placeholder: "e.g. Machine Learning & Data Science",
+                  label: "Password",
+                  key: "password",
+                  type: "password",
+                  placeholder: "e.g. **********",
                 },
               ].map(({ label, key, type, placeholder }) => (
                 <div key={key}>
@@ -473,11 +475,9 @@ const Instructors = () => {
                     className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
                   >
                     <option value="">Select Department</option>
-                    {departments
-                      .filter((d) => d !== "All")
-                      .map((d) => (
-                        <option key={d}>{d}</option>
-                      ))}
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
                   </select>
                   <FaChevronDown
                     size={11}

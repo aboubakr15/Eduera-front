@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaArrowRight,
   FaChevronLeft,
@@ -7,29 +7,13 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { MdNotifications } from "react-icons/md";
+import { adminApi } from "../../api/adminApi";
 
 const departments = [
   { label: "Computer Science", value: 1800, color: "#3b82f6" },
   { label: "Information System", value: 1500, color: "#8b5cf6" },
   { label: "Internet Technology", value: 1100, color: "#10b981" },
   { label: "Artificial Intelligence", value: 900, color: "#f59e0b" },
-];
-
-const statsCards = [
-  {
-    label: "Students",
-    value: "5,699",
-    color: "text-gray-700",
-    bg: "bg-blue-50",
-  },
-  {
-    label: "Instructors",
-    value: "297",
-    color: "text-gray-700",
-    bg: "bg-purple-50",
-  },
-  { label: "TAs", value: "300", color: "text-gray-700", bg: "bg-emerald-50" },
-  { label: "Courses", value: "150", color: "text-gray-700", bg: "bg-amber-50" },
 ];
 
 const scheduleEvents = [
@@ -395,15 +379,16 @@ function DonutChart({ passed, failed }) {
   );
 }
 
-const StudentsChart = () => {
-  const data = { passed: 3800, failed: 1300 };
-  const { passed, failed } = data;
-  const total = passed + failed;
-  const passedPct = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
-  const failedPct = total > 0 ? ((failed / total) * 100).toFixed(1) : 0;
+const StudentsChart = ({ stats }) => {
+  const malePct = stats.gender_distribution?.male_percentage || 50;
+  const femalePct = stats.gender_distribution?.female_percentage || 50;
+  const passed = Math.round(stats.total_students * (malePct / 100));
+  const failed = stats.total_students - passed;
+  const passedPct = malePct.toFixed(1);
+  const failedPct = femalePct.toFixed(1);
   const legend = [
-    { label: "Passed", value: passed, pct: passedPct, color: "bg-blue-500" },
-    { label: "Failed", value: failed, pct: failedPct, color: "bg-emerald-500" },
+    { label: "Male", value: passed, pct: passedPct, color: "bg-blue-500" },
+    { label: "Female", value: failed, pct: failedPct, color: "bg-emerald-500" },
   ];
 
   return (
@@ -435,6 +420,56 @@ const StudentsChart = () => {
 };
 
 const Dashboard = () => {
+  const [stats, setStats] = useState({
+    total_students: 0,
+    total_courses: 0,
+    total_doctors: 0,
+    total_tas: 0,
+    gender_distribution: { male_percentage: 0, female_percentage: 0 }
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardSummary = async () => {
+      try {
+        const response = await adminApi.getDashboardSummary();
+        setStats(response.data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard summary:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardSummary();
+  }, []);
+
+  const statsCards = [
+    {
+      label: "Students",
+      value: loading ? "..." : stats.total_students.toLocaleString(),
+      color: "text-gray-700",
+      bg: "bg-blue-50",
+    },
+    {
+      label: "Instructors",
+      value: loading ? "..." : stats.total_doctors.toLocaleString(),
+      color: "text-gray-700",
+      bg: "bg-purple-50",
+    },
+    { 
+      label: "TAs", 
+      value: loading ? "..." : stats.total_tas.toLocaleString(), 
+      color: "text-gray-700", 
+      bg: "bg-emerald-50" 
+    },
+    { 
+      label: "Courses", 
+      value: loading ? "..." : stats.total_courses.toLocaleString(), 
+      color: "text-gray-700", 
+      bg: "bg-amber-50" 
+    },
+  ];
+
   return (
     <div className="flex-1 flex overflow-hidden  min-h-screen">
       <div className="flex-1 flex flex-col overflow-y-auto p-4">
@@ -457,7 +492,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <StudentsChart />
+          <StudentsChart stats={stats} />
           <DepartmentsDonut />
         </div>
 
