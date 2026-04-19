@@ -26,8 +26,14 @@ const Login = () => {
         
         if (role === 'ADMIN') {
           navigate("/admin/dashboard");
+        } else if (role === 'STUDENT') {
+          navigate("/student/dashboard");
+        } else if (role === 'PROFESSOR') {
+          navigate("/instructor/dashboard");
+        } else if (role === 'TA') {
+          navigate("/ta/dashboard");
         } else {
-          setError("Access denied. Admin role required.");
+          setError("Access denied. Invalid role.");
           logoutUser();
           setIsLoading(false);
         }

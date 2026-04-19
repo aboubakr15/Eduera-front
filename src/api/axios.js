@@ -1,110 +1,207 @@
-import axios from 'axios';
+const BASE_URL = '';
 
-const api = axios.create({
+const api = {
+  defaults: {
     headers: {
-        'Content-Type': 'application/json',
-    },
-});
-
-// Request Interceptor: Attach Access Token
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+      common: {}
     }
-);
+  }
+};
 
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-    failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(token);
-        }
-    });
-
-    failedQueue = [];
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
 };
 
-// Response Interceptor: Handle 401 & Refresh Token
-api.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    async (error) => {
-        const originalRequest = error.config;
+const getToken = () => localStorage.getItem('access_token');
 
-        // If error is 401 and we haven't already retried the request
-        if (error.response && error.response.status === 401 && !originalRequest._retry) {
+const makeRequest = async (url, options = {}, retry = false) => {
+  const token = getToken();
+  const fullUrl = `${BASE_URL}${url}`;
+  console.log(`API Request: ${options.method || 'GET'} ${fullUrl}`);
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers
+  };
 
-            if (isRefreshing) {
-                // If already refreshing, queue the request
-                return new Promise(function (resolve, reject) {
-                    failedQueue.push({ resolve, reject });
-                }).then(token => {
-                    originalRequest.headers['Authorization'] = 'Bearer ' + token;
-                    return api(originalRequest);
-                }).catch(err => {
-                    return Promise.reject(err);
-                });
-            }
+  const config = {
+    ...options,
+    headers
+  };
 
-            originalRequest._retry = true;
-            isRefreshing = true;
+  let response;
+  try {
+    response = await fetch(`${BASE_URL}${url}`, config);
+    console.log(`API Response: ${response.status} ${response.statusText}`);
+  } catch (networkError) {
+    console.log("Network error:", networkError);
+    return Promise.reject(networkError);
+  }
 
-            const refreshToken = localStorage.getItem('refresh_token');
-
-            if (!refreshToken) {
-                // No refresh token available, force logout
-                window.location.href = '/login';
-                return Promise.reject(error);
-            }
-
-            try {
-                const response = await api.post('/api/token/refresh/', {
-                    refresh: refreshToken
-                });
-
-                if (response.status === 200) {
-                    const { access, refresh } = response.data;
-
-                    // Update storage
-                    localStorage.setItem('access_token', access);
-                    localStorage.setItem('refresh_token', refresh); // Rotation
-
-                    // Update header for this instance
-                    api.defaults.headers.common['Authorization'] = 'Bearer ' + access;
-
-                    // Process queued requests
-                    processQueue(null, access);
-
-                    // Retry original request
-                    originalRequest.headers['Authorization'] = 'Bearer ' + access;
-                    return api(originalRequest);
-                }
-            } catch (err) {
-                processQueue(err, null);
-                // Refresh failed (expired or invalid), force logout
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                window.location.href = '/login';
-                return Promise.reject(err);
-            } finally {
-                isRefreshing = false;
-            }
-        }
-
-        return Promise.reject(error);
+  if (response.status === 401 && !retry) {
+    const originalRequest = { url, options, retry: true };
+    
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then(token => {
+        originalRequest.options.headers['Authorization'] = `Bearer ${token}`;
+        return makeRequest(originalRequest.url, originalRequest.options, true);
+      }).catch(err => Promise.reject(err));
     }
-);
+
+    const refreshToken = localStorage.getItem('refresh_token');
+    
+    if (!refreshToken) {
+      window.location.href = '/login';
+      return Promise.reject(new Error('No refresh token'));
+    }
+
+    originalRequest.retry = true;
+    isRefreshing = true;
+
+    try {
+      const refreshResponse = await fetch(`${BASE_URL}/api/token/refresh/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh: refreshToken })
+      });
+
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+        
+        processQueue(null, data.access);
+        
+        originalRequest.options.headers['Authorization'] = `Bearer ${data.access}`;
+        return makeRequest(originalRequest.url, originalRequest.options, true);
+      }
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      window.location.href = '/login';
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  }
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    return Promise.reject({ response: { status: response.status, data: error } });
+  }
+
+  if (response.status === 204) {
+    return { status: response.status, data: null };
+  }
+
+  const data = await response.json();
+  return { status: response.status, data };
+};
+
+api.get = (url, options = {}) => makeRequest(url, { method: 'GET', ...options });
+api.post = (url, data, options = {}) => makeRequest(url, { method: 'POST', body: JSON.stringify(data), ...options });
+api.patch = (url, data, options = {}) => makeRequest(url, { method: 'PATCH', body: JSON.stringify(data), ...options });
+api.put = (url, data, options = {}) => makeRequest(url, { method: 'PUT', body: JSON.stringify(data), ...options });
+api.delete = (url, options = {}) => makeRequest(url, { method: 'DELETE', ...options });
+
+api.interceptors = {
+  request: {
+    use: (onFulfilled, onRejected) => {
+      api._requestOnFulfilled = onFulfilled;
+      api._requestOnRejected = onRejected;
+    }
+  },
+  response: {
+    use: (onFulfilled, onRejected) => {
+      api._responseOnFulfilled = onFulfilled;
+      api._responseOnRejected = onRejected;
+    }
+  }
+};
+
+const originalGet = api.get;
+const originalPost = api.post;
+const originalPatch = api.patch;
+const originalPut = api.put;
+const originalDelete = api.delete;
+
+api.get = async (url, config = {}) => {
+  let options = { method: 'GET', ...config };
+  if (api._requestOnFulfilled) {
+    const modified = await api._requestOnFulfilled({ url, options });
+    options = modified.options;
+  }
+  const response = await originalGet(url, options);
+  if (api._responseOnFulfilled) {
+    return api._responseOnFulfilled(response);
+  }
+  return response;
+};
+
+api.post = async (url, data, config = {}) => {
+  let options = { method: 'POST', body: JSON.stringify(data), ...config };
+  if (api._requestOnFulfilled) {
+    const modified = await api._requestOnFulfilled({ url, options });
+    options = modified.options;
+  }
+  const response = await originalPost(url, data, options);
+  if (api._responseOnFulfilled) {
+    return api._responseOnFulfilled(response);
+  }
+  return response;
+};
+
+api.patch = async (url, data, config = {}) => {
+  let options = { method: 'PATCH', body: JSON.stringify(data), ...config };
+  if (api._requestOnFulfilled) {
+    const modified = await api._requestOnFulfilled({ url, options });
+    options = modified.options;
+  }
+  const response = await originalPatch(url, data, options);
+  if (api._responseOnFulfilled) {
+    return api._responseOnFulfilled(response);
+  }
+  return response;
+};
+
+api.put = async (url, data, config = {}) => {
+  let options = { method: 'PUT', body: JSON.stringify(data), ...config };
+  if (api._requestOnFulfilled) {
+    const modified = await api._requestOnFulfilled({ url, options });
+    options = modified.options;
+  }
+  const response = await originalPut(url, data, options);
+  if (api._responseOnFulfilled) {
+    return api._responseOnFulfilled(response);
+  }
+  return response;
+};
+
+api.delete = async (url, config = {}) => {
+  let options = { method: 'DELETE', ...config };
+  if (api._requestOnFulfilled) {
+    const modified = await api._requestOnFulfilled({ url, options });
+    options = modified.options;
+  }
+  const response = await originalDelete(url, options);
+  if (api._responseOnFulfilled) {
+    return api._responseOnFulfilled(response);
+  }
+  return response;
+};
 
 export default api;
