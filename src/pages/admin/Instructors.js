@@ -63,9 +63,12 @@ const Instructors = () => {
   const perPage = 8;
 
   const filtered = instructors.filter((s) => {
+    const searchLower = search.toLowerCase();
+    const instructorId = s.id?.toString() || '';
     const matchSearch =
-      s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.email?.includes(search);
+      s.full_name?.toLowerCase().includes(searchLower) ||
+      s.email?.toLowerCase().includes(searchLower) ||
+      instructorId.includes(search);
     const matchDept = department === "All" || s.department?.id === parseInt(department) || s.department === parseInt(department);
     return matchSearch && matchDept;
   });

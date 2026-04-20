@@ -127,6 +127,7 @@ const Courses = () => {
       credit_hours: parseInt(form.credit_hours) || 3,
       department: parseInt(form.department) || 1,
       description: form.description,
+      prerequisites: [],
     };
 
     try {

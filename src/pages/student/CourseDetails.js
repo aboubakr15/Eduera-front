@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { instructorApi } from "../../api/instructorApi";
-import { FaBook, FaUsers, FaFileAlt, FaClipboardList } from "react-icons/fa";
+import { studentApi } from "../../api/studentApi";
+import { FaBook, FaFileAlt, FaClipboardList, FaClock, FaChalkboardTeacher, FaDownload, FaCheck, FaTimes } from "react-icons/fa";
 
-const InstructorCourseDetails = () => {
+const StudentCourseDetails = () => {
   const { id } = useParams();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,9 +15,9 @@ const InstructorCourseDetails = () => {
       try {
         let response;
         try {
-          response = await instructorApi.getCourseDetails(id);
+          response = await studentApi.getCourseDetails(id);
         } catch (e) {
-          const coursesRes = await instructorApi.getCourses();
+          const coursesRes = await studentApi.getCourses();
           const foundCourse = coursesRes.data.find(c => c.id === parseInt(id) || c.id === id);
           if (foundCourse) {
             response = { data: foundCourse };
@@ -27,7 +27,6 @@ const InstructorCourseDetails = () => {
         }
         setCourse(response.data);
       } catch (err) {
-        console.error("Error:", err.response || err);
         setError(err.response?.data?.message || err.response?.data?.detail || "Failed to load course details");
       } finally {
         setLoading(false);
@@ -48,7 +47,7 @@ const InstructorCourseDetails = () => {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen p-4">
         <div className="text-red-500 mb-4">{error}</div>
-        <Link to="/instructor/courses" className="text-blue-600 hover:underline">← Back to Courses</Link>
+        <Link to="/student/courses" className="text-blue-600 hover:underline">← Back to Courses</Link>
       </div>
     );
   }
@@ -56,7 +55,7 @@ const InstructorCourseDetails = () => {
   return (
     <div className="flex-1 flex flex-col overflow-y-auto p-4">
       <div className="mb-6">
-        <Link to="/instructor/courses" className="text-sm text-blue-600 hover:underline mb-2 inline-block">← Back to Courses</Link>
+        <Link to="/student/courses" className="text-sm text-blue-600 hover:underline mb-2 inline-block">← Back to Courses</Link>
         <h1 className="text-2xl font-bold text-gray-800">{course?.course_name}</h1>
         <p className="text-sm text-gray-400">{course?.course_code} • {course?.semester} {course?.year}</p>
       </div>
@@ -65,11 +64,11 @@ const InstructorCourseDetails = () => {
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-              <FaUsers className="text-blue-600" size={20} />
+              <FaChalkboardTeacher className="text-blue-600" size={20} />
             </div>
             <div>
-              <p className="text-xs text-gray-400">Enrolled</p>
-              <p className="text-lg font-bold text-gray-800">{course?.enrolled_count}/{course?.capacity}</p>
+              <p className="text-xs text-gray-400">Instructor</p>
+              <p className="text-sm font-bold text-gray-800">{course?.instructor_name || 'TBA'}</p>
             </div>
           </div>
         </div>
@@ -97,8 +96,17 @@ const InstructorCourseDetails = () => {
         </div>
       </div>
 
+      {course?.schedule && course.schedule.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <FaClock size={16} />
+            <span>Schedule: {course.schedule.map(s => `${s.day} ${s.time}`).join(', ')}</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2 mb-4">
-        {['materials', 'assignments', 'students'].map(tab => (
+        {['materials', 'assignments'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 rounded-xl text-sm font-medium ${activeTab === tab ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
@@ -115,10 +123,12 @@ const InstructorCourseDetails = () => {
                     <p className="text-sm font-medium text-gray-800">{m.title}</p>
                     <p className="text-xs text-gray-400">{m.material_type} • {m.file_type}</p>
                   </div>
-                  <a href={m.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">View</a>
+                  <a href={m.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 text-sm hover:underline">
+                    <FaDownload size={14} /> View
+                  </a>
                 </div>
               ))
-            ) : <p className="text-gray-400">No materials uploaded</p>}
+            ) : <p className="text-gray-400">No materials available</p>}
           </div>
         )}
 
@@ -131,26 +141,20 @@ const InstructorCourseDetails = () => {
                     <p className="text-sm font-medium text-gray-800">{a.title}</p>
                     <p className="text-xs text-gray-400">Due: {new Date(a.due_date).toLocaleDateString()} • {a.total_points} points</p>
                   </div>
-                  <span className="text-sm text-gray-500">{a.submission_count} submissions</span>
+                  <div className="flex items-center gap-2">
+                    {a.submitted ? (
+                      <span className="flex items-center gap-1 text-sm text-green-600">
+                        <FaCheck size={14} /> Submitted
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-sm text-yellow-600">
+                        <FaTimes size={14} /> Pending
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))
             ) : <p className="text-gray-400">No assignments</p>}
-          </div>
-        )}
-
-        {activeTab === 'students' && (
-          <div className="space-y-3">
-            {course?.enrolled_students?.length > 0 ? (
-              course.enrolled_students.map(s => (
-                <div key={s.enrollment_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{s.student_name}</p>
-                    <p className="text-xs text-gray-400">{s.student_email}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${s.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{s.status}</span>
-                </div>
-              ))
-            ) : <p className="text-gray-400">No students enrolled</p>}
           </div>
         )}
       </div>
@@ -158,4 +162,4 @@ const InstructorCourseDetails = () => {
   );
 };
 
-export default InstructorCourseDetails;
+export default StudentCourseDetails;

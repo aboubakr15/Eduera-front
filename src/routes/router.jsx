@@ -12,6 +12,7 @@ import Login from "../pages/Login";
 import Dashboard from "../pages/admin/Dashboard";
 import Students from "../pages/admin/Students";
 import Courses from "../pages/admin/Courses";
+import CourseOfferings from "../pages/admin/CourseOfferings";
 import Departments from "../pages/admin/Departments";
 import Instructors from "../pages/admin/Instructors";
 import ChatBot from "../pages/admin/ChatBot";
@@ -22,6 +23,7 @@ import UploadCenter from "../pages/admin/UploadCenter";
 
 import StudentDashboard from "../pages/student/Dashboard";
 import StudentCourses from "../pages/student/Courses";
+import StudentCourseDetails from "../pages/student/CourseDetails";
 import StudentEnrollments from "../pages/student/Enrollments";
 import StudentAssignments from "../pages/student/Assignments";
 import StudentGrades from "../pages/student/Grades";
@@ -61,6 +63,7 @@ export const router = createBrowserRouter([
           { path: "dashboard", element: <Dashboard /> },
           { path: "students", element: <Students /> },
           { path: "courses", element: <Courses /> },
+          { path: "course-offerings", element: <CourseOfferings /> },
           { path: "departments", element: <Departments /> },
           { path: "teaching-assistants", element: <TA /> },
           { path: "instructors", element: <Instructors /> },
@@ -82,6 +85,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "dashboard", element: <StudentDashboard /> },
           { path: "courses", element: <StudentCourses /> },
+          { path: "courses/:id", element: <StudentCourseDetails /> },
           { path: "enrollments", element: <StudentEnrollments /> },
           { path: "assignments", element: <StudentAssignments /> },
           { path: "grades", element: <StudentGrades /> },

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import man from "../../assets/images/man.png";
 import { useAuth } from "../../context/AuthContext";
 import { NavLink } from "react-router-dom";
 import {
@@ -10,6 +9,7 @@ import {
   MdAccountCircle,
   MdMenu,
   MdClose,
+  MdAdminPanelSettings,
 } from "react-icons/md";
 import {
   FaUserGraduate,
@@ -19,7 +19,22 @@ import {
   FaChevronDown,
   FaRobot,
   FaSignOutAlt,
+  FaUserTie,
+  FaUserSecret,
 } from "react-icons/fa";
+
+const getRoleIcon = (role) => {
+  switch (role) {
+    case 'ADMIN':
+      return <FaUserSecret size={20} className="text-purple-600" />;
+    case 'PROFESSOR':
+      return <FaUserTie size={20} className="text-blue-600" />;
+    case 'TA':
+      return <FaChalkboardTeacher size={20} className="text-green-600" />;
+    default:
+      return <MdAdminPanelSettings size={20} className="text-gray-600" />;
+  }
+};
 
 const mainNavItems = [
   { label: "Dashboard", icon: <MdDashboard size={20} /> },
@@ -28,6 +43,7 @@ const mainNavItems = [
   { label: "Teaching Assistants", icon: <FaChalkboardTeacher size={18} /> },
   { label: "Departments", icon: <FaBuilding size={18} /> },
   { label: "Courses", icon: <FaSchool size={18} /> },
+  { label: "Course Offerings", icon: <FaSchool size={18} /> },
   { label: "ChatBot", icon: <FaRobot size={20} /> },
   { label: "UploadCenter", icon: <FaRobot size={20} /> },
 ];
@@ -94,18 +110,16 @@ const AdminSidebar = () => {
             !isOpen ? "justify-center" : ""
           }`}
         >
-          <img
-            src={man}
-            alt="admin name"
-            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-          />
+          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+            {getRoleIcon(user?.primary_role)}
+          </div>
           {isOpen && (
             <>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 truncate">
-                  White Nigga
+                  {user?.email?.split('@')[0] || 'Admin'}
                 </p>
-                <p className="text-xs text-gray-400">Admin</p>
+                <p className="text-xs text-gray-400">{user?.primary_role || 'Admin'}</p>
               </div>
               <FaChevronDown
                 size={12}
@@ -122,7 +136,7 @@ const AdminSidebar = () => {
             <div className="px-4 py-3 border-b border-gray-50">
               <p className="text-xs text-gray-400">Signed in as</p>
               <p className="text-sm font-semibold text-gray-700 truncate">
-                man@man.com
+                {user?.email || 'admin@admin.com'}
               </p>
             </div>
             <button className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">

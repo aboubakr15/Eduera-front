@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }) => {
                 setAuthTokens({ access, refresh });
                 localStorage.setItem('access_token', access);
                 localStorage.setItem('refresh_token', refresh);
+                localStorage.setItem('user_email', email);
                 
                 const decoded = decodeToken(access);
                 if (decoded) {
@@ -65,10 +66,12 @@ export const AuthProvider = ({ children }) => {
         setUserRole(null);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_email');
     };
 
     useEffect(() => {
         const access = localStorage.getItem('access_token');
+        const email = localStorage.getItem('user_email');
         if (access) {
             const decoded = decodeToken(access);
             if (decoded) {
@@ -76,11 +79,12 @@ export const AuthProvider = ({ children }) => {
                 setUserRole(role);
                 setUser({ 
                     loggedIn: true, 
+                    email,
                     user_id: decoded.user_id,
                     primary_role: role 
                 });
             } else {
-                setUser({ loggedIn: true });
+                setUser({ loggedIn: true, email });
             }
         }
         setLoading(false);

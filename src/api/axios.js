@@ -26,7 +26,10 @@ const getToken = () => localStorage.getItem('access_token');
 
 const makeRequest = async (url, options = {}, retry = false) => {
   const token = getToken();
-  const fullUrl = `${BASE_URL}${url}`;
+  const queryString = options.params && Object.keys(options.params).length > 0
+    ? '?' + new URLSearchParams(options.params).toString()
+    : '';
+  const fullUrl = `${BASE_URL}${url}${queryString}`;
   console.log(`API Request: ${options.method || 'GET'} ${fullUrl}`);
   
   const headers = {
@@ -42,7 +45,7 @@ const makeRequest = async (url, options = {}, retry = false) => {
 
   let response;
   try {
-    response = await fetch(`${BASE_URL}${url}`, config);
+    response = await fetch(fullUrl, config);
     console.log(`API Response: ${response.status} ${response.statusText}`);
   } catch (networkError) {
     console.log("Network error:", networkError);
@@ -50,7 +53,14 @@ const makeRequest = async (url, options = {}, retry = false) => {
   }
 
   if (response.status === 401 && !retry) {
-    const originalRequest = { url, options, retry: true };
+    const originalQueryString = options.params && Object.keys(options.params).length > 0
+      ? '?' + new URLSearchParams(options.params).toString()
+      : '';
+    const originalUrl = `${url}${originalQueryString}`;
+    const originalRequest = { url: originalUrl, options, retry: true };
+    
+    const retryOptions = { ...options };
+    delete retryOptions.params;
     
     if (isRefreshing) {
       return new Promise((resolve, reject) => {

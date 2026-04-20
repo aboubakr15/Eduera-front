@@ -49,9 +49,12 @@ const Students = () => {
   };
 
   const filtered = students.filter((s) => {
+    const searchLower = search.toLowerCase();
+    const studentId = s.id?.toString() || s.student_id?.toString() || '';
     const matchSearch =
-      s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.email?.includes(search);
+      s.full_name?.toLowerCase().includes(searchLower) ||
+      s.email?.toLowerCase().includes(searchLower) ||
+      studentId.includes(search);
     const studentDeptId = s.department_id || s.department;
     const matchDept = department === "All" || studentDeptId === parseInt(department);
     return matchSearch && matchDept;

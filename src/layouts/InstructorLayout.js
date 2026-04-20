@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import man from "../assets/images/man.png";
 import { useAuth } from "../context/AuthContext";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -14,7 +13,18 @@ import {
   MdMenu,
   MdClose,
 } from "react-icons/md";
-import { FaBook, FaClipboardList, FaFileUpload, FaSignOutAlt } from "react-icons/fa";
+import { FaBook, FaClipboardList, FaFileUpload, FaSignOutAlt, FaUserTie, FaChalkboardTeacher } from "react-icons/fa";
+
+const getRoleIcon = (role) => {
+  switch (role) {
+    case 'PROFESSOR':
+      return <FaUserTie size={20} className="text-blue-600" />;
+    case 'TA':
+      return <FaChalkboardTeacher size={20} className="text-green-600" />;
+    default:
+      return <FaUserTie size={20} className="text-gray-600" />;
+  }
+};
 
 const mainNavItems = [
   { label: "Dashboard", icon: <MdDashboard size={20} />, path: "/instructor/dashboard" },
@@ -59,7 +69,9 @@ const InstructorLayout = () => {
 
         <div className="mx-2 mb-4">
           <div className={`flex items-center gap-3 bg-gray-50 rounded-xl px-2 py-2.5 ${!isOpen ? "justify-center" : ""}`}>
-            <img src={man} alt="instructor" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              {getRoleIcon(user?.primary_role)}
+            </div>
             {isOpen && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 truncate">{user?.email?.split('@')[0] || 'Instructor'}</p>
