@@ -24,7 +24,8 @@ import {
 } from "react-icons/fa";
 import { MdOutlineSlideshow } from "react-icons/md";
 import botImg from "../../assets/images/botImg.png";
-
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 const UploadCenter = () => {
   const [source] = useState("file");
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -55,22 +56,33 @@ const UploadCenter = () => {
   };
 
   const slideTitle = uploadedFile?.name.split(".")[0];
-
+  const navigate = useNavigate();
   return (
-    <div className="flex flex-col h-full overflow-y-auto p-8 bg-gray-50">
-      <div className="max-w-5xl mx-auto w-full">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-            <FaFile size={20} className="text-[#D67A1E]" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">Upload Center</h2>
-            <p className="text-xs text-gray-400">
-              Upload your material here for chatbot!
-            </p>
+    <div className="flex flex-col h-full overflow-y-auto p-8">
+      <div className=" mx-auto w-full">
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+          >
+            <ArrowLeft
+              size={18}
+              className="transition-transform group-hover:-translate-x-1"
+            />
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+              <FaFile size={20} className="text-[#D67A1E]" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Upload Center</h2>
+              <p className="text-xs text-gray-400">
+                Upload your material here for chatbot!
+              </p>
+            </div>
           </div>
         </div>
-
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
           <div>
             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -87,7 +99,7 @@ const UploadCenter = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                   isDragging
-                    ? "border-orange-400 bg-orange-50"
+                    ? "border-[#D67A1E] bg-orange-50"
                     : "border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50/40"
                 }`}
               >

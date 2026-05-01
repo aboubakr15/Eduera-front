@@ -20,17 +20,17 @@ const Login = () => {
     try {
       const result = await loginUser(email, password);
       if (result.success) {
-        const access = localStorage.getItem('access_token');
-        const payload = access ? JSON.parse(atob(access.split('.')[1])) : null;
+        const access = localStorage.getItem("access_token");
+        const payload = access ? JSON.parse(atob(access.split(".")[1])) : null;
         const role = payload?.primary_role || payload?.role;
-        
-        if (role === 'ADMIN') {
+
+        if (role === "ADMIN") {
           navigate("/admin/dashboard");
-        } else if (role === 'STUDENT') {
+        } else if (role === "STUDENT") {
           navigate("/student/dashboard");
-        } else if (role === 'PROFESSOR') {
+        } else if (role === "PROFESSOR") {
           navigate("/instructor/dashboard");
-        } else if (role === 'TA') {
+        } else if (role === "TA") {
           navigate("/ta/dashboard");
         } else {
           setError("Access denied. Invalid role.");
@@ -53,7 +53,7 @@ const Login = () => {
         <div className="pb-10 px-10 md:px-14 flex flex-col justify-center bg-white relative order-2 md:order-1">
           <div className="mb-12 text-center md:text-left">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/")}
               className="flex items-center gap-2 text-gray-500 hover:text-[#1B2036]
                mb-12 transition-all group"
             >

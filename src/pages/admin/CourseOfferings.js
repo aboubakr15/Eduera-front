@@ -10,7 +10,8 @@ import {
   FaBook,
 } from "react-icons/fa";
 import { adminApi } from "../../api/adminApi";
-
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 const CourseOfferings = () => {
   const [offerings, setOfferings] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -37,7 +38,10 @@ const CourseOfferings = () => {
   });
 
   const semesters = ["Fall", "Spring", "Summer"];
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+  const years = Array.from(
+    { length: 5 },
+    (_, i) => new Date().getFullYear() - 2 + i,
+  );
 
   const perPage = 8;
 
@@ -53,7 +57,7 @@ const CourseOfferings = () => {
       if (semester !== "All") params.semester = semester;
       if (yearFilter !== "All") params.year = parseInt(yearFilter);
       if (yearFilter === "All") params.is_active = true;
-      
+
       try {
         const offeringsRes = await adminApi.getCourseOfferings(params);
         setOfferings(offeringsRes.data || []);
@@ -61,7 +65,7 @@ const CourseOfferings = () => {
         console.error("Failed to fetch offerings:", e);
         setOfferings([]);
       }
-      
+
       try {
         const coursesRes = await adminApi.getCourses();
         console.log("Courses response:", coursesRes);
@@ -70,18 +74,18 @@ const CourseOfferings = () => {
         console.error("Failed to fetch courses:", e);
         setCourses([]);
       }
-      
+
       try {
-        const instructorsRes = await adminApi.getUsers('PROFESSOR');
+        const instructorsRes = await adminApi.getUsers("PROFESSOR");
         console.log("Instructors response:", instructorsRes);
         setInstructors(instructorsRes.data || []);
       } catch (e) {
         console.error("Failed to fetch instructors:", e);
         setInstructors([]);
       }
-      
+
       try {
-        const tasRes = await adminApi.getUsers('TA');
+        const tasRes = await adminApi.getUsers("TA");
         console.log("TAs response:", tasRes);
         setTAs(tasRes.data || []);
       } catch (e) {
@@ -98,7 +102,9 @@ const CourseOfferings = () => {
   const parseSchedule = (scheduleStr) => {
     if (!scheduleStr) return [];
     try {
-      return typeof scheduleStr === 'string' ? JSON.parse(scheduleStr) : scheduleStr;
+      return typeof scheduleStr === "string"
+        ? JSON.parse(scheduleStr)
+        : scheduleStr;
     } catch {
       return [];
     }
@@ -106,13 +112,14 @@ const CourseOfferings = () => {
 
   const formatSchedule = (schedule) => {
     if (!schedule || schedule.length === 0) return "-";
-    return schedule.map(s => `${s.day} ${s.time}`).join(", ");
+    return schedule.map((s) => `${s.day} ${s.time}`).join(", ");
   };
 
   const filtered = offerings.filter((o) => {
     const courseName = o.course_details?.name || o.course_name || "";
     const courseCode = o.course_details?.code || o.course_code || "";
-    const matchSearch = search === "" || 
+    const matchSearch =
+      search === "" ||
       courseName.toLowerCase().includes(search.toLowerCase()) ||
       courseCode.toLowerCase().includes(search.toLowerCase());
     const matchSemester = semester === "All" || o.semester === semester;
@@ -187,13 +194,13 @@ const CourseOfferings = () => {
 
   const handleSave = async () => {
     if (!form.course || !form.semester || !form.year) return;
-    
+
     const payload = {
       course: parseInt(form.course),
       semester: form.semester,
       year: parseInt(form.year),
       instructor: form.instructor ? parseInt(form.instructor) : null,
-      tas: form.tas.map(t => parseInt(t)),
+      tas: form.tas.map((t) => parseInt(t)),
       capacity: parseInt(form.capacity) || 30,
       course_schedule: form.course_schedule,
       is_active: form.is_active,
@@ -201,9 +208,14 @@ const CourseOfferings = () => {
 
     try {
       if (editingOffering) {
-        const response = await adminApi.updateCourseOffering(editingOffering.id, payload);
+        const response = await adminApi.updateCourseOffering(
+          editingOffering.id,
+          payload,
+        );
         setOfferings((prev) =>
-          prev.map((o) => (o.id === editingOffering.id ? { ...o, ...response.data } : o)),
+          prev.map((o) =>
+            o.id === editingOffering.id ? { ...o, ...response.data } : o,
+          ),
         );
       } else {
         const response = await adminApi.createCourseOffering(payload);
@@ -218,7 +230,10 @@ const CourseOfferings = () => {
   const addScheduleSlot = () => {
     setForm((prev) => ({
       ...prev,
-      course_schedule: [...prev.course_schedule, { day: "Monday", time: "09:00-10:30" }],
+      course_schedule: [
+        ...prev.course_schedule,
+        { day: "Monday", time: "09:00-10:30" },
+      ],
     }));
   };
 
@@ -236,13 +251,26 @@ const CourseOfferings = () => {
   const pageIds = paginated.map((o) => o.id);
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen font-sans">
       <div className="px-4 pt-4 pb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
-          Course Offerings
-        </h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+          >
+            <ArrowLeft
+              size={18}
+              className="transition-transform group-hover:-translate-x-1"
+            />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+            Course Offerings
+          </h1>
+        </div>
+
         <button
           onClick={openAdd}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold text-sm hover:shadow-md shadow-sm transition-all duration-200"
@@ -280,9 +308,13 @@ const CourseOfferings = () => {
                 }}
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 outline-none cursor-pointer"
               >
-                <option key="all" value="All">All Semesters</option>
+                <option key="all" value="All">
+                  All Semesters
+                </option>
                 {semesters.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
               <FaChevronDown
@@ -299,9 +331,13 @@ const CourseOfferings = () => {
                 }}
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 outline-none cursor-pointer"
               >
-                <option key="all" value="All">All Years</option>
+                <option key="all" value="All">
+                  All Years
+                </option>
                 {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
                 ))}
               </select>
               <FaChevronDown
@@ -384,10 +420,14 @@ const CourseOfferings = () => {
                   </td>
                   <td className="py-3 px-2">
                     <div className="font-semibold text-gray-800 text-sm">
-                      {offering.course_details?.name || offering.course_name || "-"}
+                      {offering.course_details?.name ||
+                        offering.course_name ||
+                        "-"}
                     </div>
                     <div className="text-xs text-gray-400">
-                      {offering.course_details?.code || offering.course_code || "-"}
+                      {offering.course_details?.code ||
+                        offering.course_code ||
+                        "-"}
                     </div>
                   </td>
                   <td className="py-3 px-2 text-sm text-gray-700">
@@ -406,9 +446,13 @@ const CourseOfferings = () => {
                     {formatSchedule(offering.course_schedule)}
                   </td>
                   <td className="py-3 px-2">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      offering.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        offering.is_active
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
                       {offering.is_active ? "Active" : "Inactive"}
                     </span>
                   </td>
@@ -478,7 +522,8 @@ const CourseOfferings = () => {
             <p className="text-sm text-gray-400 mb-1">
               You are about to delete{" "}
               <span className="font-semibold text-gray-700">
-                {confirmDelete.course_details?.name || confirmDelete.course_name}
+                {confirmDelete.course_details?.name ||
+                  confirmDelete.course_name}
               </span>
             </p>
             <p className="text-xs text-gray-400 mb-7">
@@ -507,7 +552,9 @@ const CourseOfferings = () => {
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg border border-gray-100 my-8">
             <h2 className="text-xl font-bold text-gray-800 mb-6">
-              {editingOffering ? "Edit Course Offering" : "Add New Course Offering"}
+              {editingOffering
+                ? "Edit Course Offering"
+                : "Add New Course Offering"}
             </h2>
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               {/* Course Select */}
@@ -518,12 +565,16 @@ const CourseOfferings = () => {
                 <div className="relative">
                   <select
                     value={form.course}
-                    onChange={(e) => setForm((f) => ({ ...f, course: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, course: e.target.value }))
+                    }
                     className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
                   >
                     <option value="">Select Course</option>
                     {courses.map((c) => (
-                      <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.code} - {c.name}
+                      </option>
                     ))}
                   </select>
                   <FaChevronDown
@@ -542,11 +593,15 @@ const CourseOfferings = () => {
                   <div className="relative">
                     <select
                       value={form.semester}
-                      onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, semester: e.target.value }))
+                      }
                       className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
                     >
                       {semesters.map((s) => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
                       ))}
                     </select>
                     <FaChevronDown
@@ -562,11 +617,15 @@ const CourseOfferings = () => {
                   <div className="relative">
                     <select
                       value={form.year}
-                      onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, year: e.target.value }))
+                      }
                       className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
                     >
                       {years.map((y) => (
-                        <option key={y} value={y}>{y}</option>
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
                       ))}
                     </select>
                     <FaChevronDown
@@ -585,12 +644,16 @@ const CourseOfferings = () => {
                 <div className="relative">
                   <select
                     value={form.instructor}
-                    onChange={(e) => setForm((f) => ({ ...f, instructor: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, instructor: e.target.value }))
+                    }
                     className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
                   >
                     <option value="">Select Instructor</option>
                     {instructors.map((i) => (
-                      <option key={i.id} value={i.id}>{i.full_name}</option>
+                      <option key={i.id} value={i.id}>
+                        {i.full_name}
+                      </option>
                     ))}
                   </select>
                   <FaChevronDown
@@ -610,16 +673,23 @@ const CourseOfferings = () => {
                     multiple
                     value={form.tas}
                     onChange={(e) => {
-                      const selected = Array.from(e.target.selectedOptions, option => option.value);
+                      const selected = Array.from(
+                        e.target.selectedOptions,
+                        (option) => option.value,
+                      );
                       setForm((f) => ({ ...f, tas: selected }));
                     }}
                     className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors h-24"
                   >
                     {tas.map((t) => (
-                      <option key={t.id} value={t.id}>{t.full_name}</option>
+                      <option key={t.id} value={t.id}>
+                        {t.full_name}
+                      </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Hold Ctrl/Cmd to select multiple
+                  </p>
                 </div>
               </div>
 
@@ -631,7 +701,9 @@ const CourseOfferings = () => {
                 <input
                   type="number"
                   value={form.capacity}
-                  onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, capacity: e.target.value }))
+                  }
                   className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
                 />
               </div>
@@ -645,7 +717,9 @@ const CourseOfferings = () => {
                   <div key={index} className="flex gap-2 mb-2">
                     <select
                       value={slot.day}
-                      onChange={(e) => updateScheduleSlot(index, "day", e.target.value)}
+                      onChange={(e) =>
+                        updateScheduleSlot(index, "day", e.target.value)
+                      }
                       className="flex-1 border border-gray-100 bg-gray-50 rounded-lg px-2 py-1 text-sm"
                     >
                       <option value="Monday">Monday</option>
@@ -658,7 +732,9 @@ const CourseOfferings = () => {
                     <input
                       type="text"
                       value={slot.time}
-                      onChange={(e) => updateScheduleSlot(index, "time", e.target.value)}
+                      onChange={(e) =>
+                        updateScheduleSlot(index, "time", e.target.value)
+                      }
                       placeholder="09:00-10:30"
                       className="flex-1 border border-gray-100 bg-gray-50 rounded-lg px-2 py-1 text-sm"
                     />
@@ -683,7 +759,9 @@ const CourseOfferings = () => {
                 <input
                   type="checkbox"
                   checked={form.is_active}
-                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, is_active: e.target.checked }))
+                  }
                   className="w-4 h-4 rounded accent-blue-500"
                 />
                 <label className="text-sm text-gray-700">Active</label>

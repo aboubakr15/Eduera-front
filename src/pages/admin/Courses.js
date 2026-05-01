@@ -10,7 +10,8 @@ import {
   FaBook,
 } from "react-icons/fa";
 import { adminApi } from "../../api/adminApi";
-
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +62,10 @@ const Courses = () => {
     const matchSearch =
       c.name?.toLowerCase().includes(search.toLowerCase()) ||
       c.code?.toLowerCase().includes(search.toLowerCase());
-    const matchDept = department === "All" || c.department?.id === parseInt(department) || c.department === parseInt(department);
+    const matchDept =
+      department === "All" ||
+      c.department?.id === parseInt(department) ||
+      c.department === parseInt(department);
     return matchSearch && matchDept;
   });
 
@@ -102,7 +106,13 @@ const Courses = () => {
 
   const openAdd = () => {
     setEditingCourse(null);
-    setForm({ name: "", code: "", credit_hours: "", department: "", description: "" });
+    setForm({
+      name: "",
+      code: "",
+      credit_hours: "",
+      department: "",
+      description: "",
+    });
     setShowModal(true);
   };
 
@@ -120,7 +130,7 @@ const Courses = () => {
 
   const handleSave = async () => {
     if (!form.name || !form.code) return;
-    
+
     const payload = {
       name: form.name,
       code: form.code,
@@ -134,7 +144,9 @@ const Courses = () => {
       if (editingCourse) {
         const response = await adminApi.updateCourse(editingCourse.id, payload);
         setCourses((prev) =>
-          prev.map((c) => (c.id === editingCourse.id ? { ...c, ...response.data } : c)),
+          prev.map((c) =>
+            c.id === editingCourse.id ? { ...c, ...response.data } : c,
+          ),
         );
       } else {
         const response = await adminApi.createCourse(payload);
@@ -149,13 +161,26 @@ const Courses = () => {
   const pageIds = paginated.map((c) => c.id);
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen font-sans">
       <div className="px-4 pt-4 pb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
-          Courses
-        </h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+          >
+            <ArrowLeft
+              size={18}
+              className="transition-transform group-hover:-translate-x-1"
+            />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+            Courses
+          </h1>
+        </div>
+
         <button
           onClick={openAdd}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold text-sm hover:shadow-md shadow-sm transition-all duration-200"
@@ -193,9 +218,13 @@ const Courses = () => {
                 }}
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 outline-none cursor-pointer"
               >
-                <option key="all" value="All">All</option>
+                <option key="all" value="All">
+                  All
+                </option>
                 {departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
                 ))}
               </select>
               <FaChevronDown
@@ -277,7 +306,12 @@ const Courses = () => {
                     {course.credit_hours || course.duration || "-"}
                   </td>
                   <td className="py-3 px-2 text-sm font-semibold text-gray-700">
-                    {typeof course.department === 'object' ? course.department?.name : (departments.find(d => d.id === course.department)?.name || course.department || "-")}
+                    {typeof course.department === "object"
+                      ? course.department?.name
+                      : departments.find((d) => d.id === course.department)
+                          ?.name ||
+                        course.department ||
+                        "-"}
                   </td>
                   <td className="py-3 pr-6 text-right">
                     <div className="flex items-center justify-end gap-3">
@@ -427,10 +461,11 @@ const Courses = () => {
                     className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
                   >
                     <option value="">Select Department</option>
-                    {departments
-                      .map((d) => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
                   </select>
                   <FaChevronDown
                     size={11}

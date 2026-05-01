@@ -9,7 +9,8 @@ import {
   FaChevronDown,
   FaBuilding,
 } from "react-icons/fa";
-
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 const initialDepartments = [
   {
     id: 1,
@@ -157,13 +158,26 @@ const Departments = () => {
   const pageIds = paginated.map((d) => d.id);
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen font-sans">
       <div className="px-4 pt-4 pb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
-          Departments
-        </h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+          >
+            <ArrowLeft
+              size={18}
+              className="transition-transform group-hover:-translate-x-1"
+            />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+            Departments
+          </h1>
+        </div>
+
         <button
           onClick={openAdd}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold text-sm hover:shadow-md shadow-sm transition-all duration-200"

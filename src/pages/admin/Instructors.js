@@ -10,7 +10,8 @@ import {
   FaUserTie,
 } from "react-icons/fa";
 import { adminApi } from "../../api/adminApi";
-
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 const Instructors = () => {
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ const Instructors = () => {
   const fetchInstructors = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.getUsers('PROFESSOR');
+      const response = await adminApi.getUsers("PROFESSOR");
       setInstructors(response.data);
     } catch (error) {
       console.error("Failed to fetch instructors:", error);
@@ -64,12 +65,15 @@ const Instructors = () => {
 
   const filtered = instructors.filter((s) => {
     const searchLower = search.toLowerCase();
-    const instructorId = s.id?.toString() || '';
+    const instructorId = s.id?.toString() || "";
     const matchSearch =
       s.full_name?.toLowerCase().includes(searchLower) ||
       s.email?.toLowerCase().includes(searchLower) ||
       instructorId.includes(search);
-    const matchDept = department === "All" || s.department?.id === parseInt(department) || s.department === parseInt(department);
+    const matchDept =
+      department === "All" ||
+      s.department?.id === parseInt(department) ||
+      s.department === parseInt(department);
     return matchSearch && matchDept;
   });
 
@@ -129,9 +133,9 @@ const Instructors = () => {
 
   const handleSave = async () => {
     if (!form.email) return;
-    
+
     const payload = {
-      username: form.username || form.email.split('@')[0],
+      username: form.username || form.email.split("@")[0],
       email: form.email,
       password: form.password,
       full_name: form.full_name,
@@ -150,13 +154,26 @@ const Instructors = () => {
   const pageIds = paginated.map((s) => s.id);
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen font-sans">
       <div className="px-4 pt-4 pb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
-          Instructors
-        </h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+          >
+            <ArrowLeft
+              size={18}
+              className="transition-transform group-hover:-translate-x-1"
+            />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+            Instructors
+          </h1>
+        </div>
+
         <button
           onClick={openAdd}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold text-sm hover:shadow-md shadow-sm transition-all duration-200"
@@ -194,9 +211,13 @@ const Instructors = () => {
                 }}
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 outline-none cursor-pointer"
               >
-                <option key="all" value="All">All</option>
+                <option key="all" value="All">
+                  All
+                </option>
                 {departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
                 ))}
               </select>
               <FaChevronDown
@@ -279,7 +300,10 @@ const Instructors = () => {
                   </td>
                   <td className="py-3 pl-2">
                     <img
-                      src={instructor.profile_picture_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${instructor.id}`}
+                      src={
+                        instructor.profile_picture_url ||
+                        `https://api.dicebear.com/7.x/adventurer/svg?seed=${instructor.id}`
+                      }
                       alt={instructor.full_name}
                       className="w-9 h-9 rounded-full bg-gray-100 object-cover"
                     />
@@ -297,7 +321,12 @@ const Instructors = () => {
                     {instructor.email}
                   </td>
                   <td className="py-3 px-2 text-sm font-semibold text-gray-700">
-                    {typeof instructor.department === 'object' ? instructor.department?.name : (departments.find(d => d.id === instructor.department)?.name || instructor.department || "-")}
+                    {typeof instructor.department === "object"
+                      ? instructor.department?.name
+                      : departments.find((d) => d.id === instructor.department)
+                          ?.name ||
+                        instructor.department ||
+                        "-"}
                   </td>
                   <td className="py-3 pr-6 text-right">
                     <div className="flex items-center justify-end gap-3">
@@ -479,7 +508,9 @@ const Instructors = () => {
                   >
                     <option value="">Select Department</option>
                     {departments.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
                     ))}
                   </select>
                   <FaChevronDown

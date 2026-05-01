@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
   FaArrowRight,
   FaChevronLeft,
   FaChevronRight,
   FaPlus,
   FaUsers,
+  FaBullhorn,
 } from "react-icons/fa";
 import { MdNotifications } from "react-icons/md";
 import { adminApi } from "../../api/adminApi";
@@ -66,9 +69,9 @@ function buildCalendar(year, month) {
   return cells;
 }
 
-function StatCard({ label, value, color, bg }) {
+function StatCard({ label, value, color, bg, onClick }) {
   return (
-    <div className="bg-white rounded-2xl p-3 sm:p-5 flex items-center justify-between shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 w-full">
+    <div className="bg-white rounded-2xl p-3 sm:p-5 flex items-center justify-between shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 w-full border-l-4 border-l-[#5362a3]">
       <div className="flex-1 overflow-hidden">
         <p className="text-[11px] sm:text-xs text-gray-400 font-medium mb-1 break-words">
           {label}
@@ -78,7 +81,8 @@ function StatCard({ label, value, color, bg }) {
         </p>
       </div>
       <div
-        className={`w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 ml-2 ${bg} ${color} rounded-xl flex items-center justify-center cursor-pointer`}
+        className={`w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0  ${bg} ${color} rounded-xl flex items-center justify-center cursor-pointer`}
+        onClick={onClick}
       >
         <FaArrowRight size={14} />
       </div>
@@ -175,7 +179,7 @@ function ScheduleSection() {
     <div className="mt-6">
       <div className="flex items-center justify-between mb-1">
         <div>
-          <h3 className="text-base font-bold text-gray-800">Schedule</h3>
+          <h3 className="text-base font-bold text-gray-800">Future Events</h3>
           <p className="text-xs text-gray-400">{today}</p>
         </div>
         <button className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors">
@@ -240,7 +244,7 @@ function DepartmentsDonut() {
   });
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+    <div className="bg-gray-50 rounded-2xl p-5 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-bold text-gray-800">
           Students by Department
@@ -392,7 +396,7 @@ const StudentsChart = ({ stats }) => {
   ];
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+    <div className="bg-gray-50 rounded-2xl p-5 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-bold text-gray-800">Students</h3>
       </div>
@@ -419,16 +423,141 @@ const StudentsChart = ({ stats }) => {
   );
 };
 
+function AnnouncementsSection() {
+  const [announcements, setAnnouncements] = useState([]);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newContent, setNewContent] = useState("");
+  const [, setTick] = useState(0);
+
+  const timeAgo = (timestamp) => {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return "Just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleAdd = () => {
+    if (!newContent.trim()) return;
+    const newAnnouncement = {
+      id: Date.now(),
+      content: newContent.trim(),
+      createdAt: Date.now(),
+      author: "Admin",
+    };
+    setAnnouncements((prev) => [newAnnouncement, ...prev]);
+    setNewContent("");
+    setShowNewForm(false);
+  };
+
+  const handleCancel = () => {
+    setNewContent("");
+    setShowNewForm(false);
+  };
+
+  return (
+    <div className="bg-gray-50 rounded-2xl p-5 mb-4 shadow-sm border border-gray-100">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base font-bold text-gray-800">Announcements</h3>
+        {!showNewForm && (
+          <button
+            onClick={() => setShowNewForm(true)}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <FaPlus size={10} />
+            New
+          </button>
+        )}
+      </div>
+
+      {showNewForm && (
+        <div className="mb-4 p-4 bg-white rounded-xl border border-gray-200">
+          <textarea
+            autoFocus
+            value={newContent}
+            onChange={(e) => setNewContent(e.target.value)}
+            placeholder="Write your announcement..."
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+            rows={3}
+          />
+          <div className="flex items-center justify-end gap-2 mt-3">
+            <button
+              onClick={handleCancel}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={!newContent.trim()}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium bg-[#1B2036] text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Post
+            </button>
+          </div>
+        </div>
+      )}
+
+      {announcements.length === 0 && !showNewForm ? (
+        <div className="text-center py-8">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <FaBullhorn size={18} className="text-gray-300" />
+          </div>
+          <p className="text-sm text-gray-400">No announcements yet</p>
+          <p className="text-xs text-gray-300 mt-1">
+            Click "New" to create one
+          </p>
+        </div>
+      ) : (
+        <nav className="max-h-[260px] overflow-y-auto space-y-3">
+          {announcements.map((announcement) => (
+            <div
+              key={announcement.id}
+              className="flex gap-3 p-3 bg-white rounded-xl border border-gray-100"
+            >
+              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <FaBullhorn size={13} className="text-blue-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {announcement.content}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs font-medium text-gray-500">
+                    {announcement.author}
+                  </span>
+                  <span className="text-xs text-gray-300">•</span>
+                  <span className="text-xs text-gray-400">
+                    {timeAgo(announcement.createdAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </nav>
+      )}
+    </div>
+  );
+}
+
 const Dashboard = () => {
   const [stats, setStats] = useState({
     total_students: 0,
     total_courses: 0,
     total_doctors: 0,
     total_tas: 0,
-    gender_distribution: { male_percentage: 0, female_percentage: 0 }
+    gender_distribution: { male_percentage: 0, female_percentage: 0 },
   });
   const [loading, setLoading] = useState(true);
-
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchDashboardSummary = async () => {
       try {
@@ -449,52 +578,58 @@ const Dashboard = () => {
       value: loading ? "..." : stats.total_students.toLocaleString(),
       color: "text-gray-700",
       bg: "bg-blue-50",
+      path: "/admin/students",
     },
     {
       label: "Instructors",
       value: loading ? "..." : stats.total_doctors.toLocaleString(),
       color: "text-gray-700",
       bg: "bg-purple-50",
+      path: "/admin/instructors",
     },
-    { 
-      label: "TAs", 
-      value: loading ? "..." : stats.total_tas.toLocaleString(), 
-      color: "text-gray-700", 
-      bg: "bg-emerald-50" 
+    {
+      label: "TAs",
+      value: loading ? "..." : stats.total_tas.toLocaleString(),
+      color: "text-gray-700",
+      bg: "bg-emerald-50",
+      path: "/admin/teaching-assistants",
     },
-    { 
-      label: "Courses", 
-      value: loading ? "..." : stats.total_courses.toLocaleString(), 
-      color: "text-gray-700", 
-      bg: "bg-amber-50" 
+    {
+      label: "Courses",
+      value: loading ? "..." : stats.total_courses.toLocaleString(),
+      color: "text-gray-700",
+      bg: "bg-amber-50",
+      path: "/admin/courses",
     },
   ];
 
   return (
     <div className="flex-1 flex overflow-hidden  min-h-screen">
-      <div className="flex-1 flex flex-col overflow-y-auto p-4">
+      <div className="flex-1 flex flex-col overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
             <p className="text-sm text-gray-400">{today}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="relative w-9 h-9 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-500 shadow-sm hover:shadow-md transition-shadow">
-              <MdNotifications size={18} />
-            </button>
-          </div>
+          <div className="flex items-center gap-3"></div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {statsCards.map((card) => (
-            <StatCard key={card.label} {...card} />
+            <StatCard
+              key={card.label}
+              {...card}
+              onClick={() => navigate(card.path)}
+            />
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <StudentsChart stats={stats} />
           <DepartmentsDonut />
         </div>
+
+        <AnnouncementsSection />
 
         <div className="flex-1" />
       </div>

@@ -32,17 +32,17 @@ import StudentProfile from "../pages/student/Profile";
 import StudentChat from "../pages/student/Chat";
 import StudentNotifications from "../pages/student/Notifications";
 
-import InstructorDashboard from "../pages/instructor/Dashboard";
-import InstructorCourses from "../pages/instructor/Courses";
-import InstructorMaterials from "../pages/instructor/Materials";
-import InstructorAssignments from "../pages/instructor/Assignments";
-import InstructorSubmissions from "../pages/instructor/Submissions";
-import InstructorStudents from "../pages/instructor/Students";
-import InstructorAnnouncements from "../pages/instructor/Announcements";
-import InstructorChat from "../pages/instructor/Chat";
-import InstructorNotifications from "../pages/instructor/Notifications";
+import InstructorDashboard from "../pages/Instructor/Dashboard";
+import InstructorCourses from "../pages/Instructor/Courses";
+import InstructorMaterials from "../pages/Instructor/Materials";
+import InstructorAssignments from "../pages/Instructor/Assignments";
+import InstructorSubmissions from "../pages/Instructor/Submissions";
+import InstructorStudents from "../pages/Instructor/Students";
+import InstructorAnnouncements from "../pages/Instructor/Announcements";
+import InstructorChat from "../pages/Instructor/Chat";
+import InstructorNotifications from "../pages/Instructor/Notifications";
 
-import InstructorCourseDetails from "../pages/instructor/CourseDetails";
+import InstructorCourseDetails from "../pages/Instructor/CourseDetails";
 
 export const router = createBrowserRouter([
   {
@@ -55,7 +55,7 @@ export const router = createBrowserRouter([
 
   {
     path: "/admin",
-    element: <ProtectedRoute allowedRoles={['ADMIN']} />,
+    element: <ProtectedRoute allowedRoles={["ADMIN"]} />,
     children: [
       {
         element: <AdminLayout />,
@@ -78,7 +78,7 @@ export const router = createBrowserRouter([
 
   {
     path: "/student",
-    element: <ProtectedRoute allowedRoles={['STUDENT']} />,
+    element: <ProtectedRoute allowedRoles={["STUDENT"]} />,
     children: [
       {
         element: <StudentLayout />,
@@ -100,7 +100,7 @@ export const router = createBrowserRouter([
 
   {
     path: "/instructor",
-    element: <ProtectedRoute allowedRoles={['PROFESSOR']} />,
+    element: <ProtectedRoute allowedRoles={["PROFESSOR"]} />,
     children: [
       {
         element: <InstructorLayout />,
@@ -122,7 +122,7 @@ export const router = createBrowserRouter([
 
   {
     path: "/ta",
-    element: <ProtectedRoute allowedRoles={['TA']} />,
+    element: <ProtectedRoute allowedRoles={["TA"]} />,
     children: [
       {
         element: <InstructorLayout />,

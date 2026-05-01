@@ -1,8 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
+  darkMode: "class",
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -21,8 +20,10 @@ module.exports = {
         heading: ["Poppins", "sans-serif"],
       },
       backgroundImage: {
-        'hero-mesh': "radial-gradient(at 0% 0%, rgba(244, 140, 6, 0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(91, 91, 152, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(16, 55, 65, 1) 0px, transparent 50%)",
-        'grid-pattern': "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
+        "hero-mesh":
+          "radial-gradient(at 0% 0%, rgba(244, 140, 6, 0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(91, 91, 152, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(16, 55, 65, 1) 0px, transparent 50%)",
+        "grid-pattern":
+          "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
       },
       keyframes: {
         shine: {
@@ -45,5 +46,4 @@ module.exports = {
     },
   },
   plugins: [],
-}
-
+};

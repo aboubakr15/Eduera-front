@@ -68,8 +68,8 @@ const QuizGenerator = () => {
     <div className="flex flex-col h-full overflow-y-auto py-10 bg-gray-50">
       <div className="max-w-5xl px-10 mx-auto w-full">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-            <FaQuestionCircle size={18} className="text-purple-400" />
+          <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+            <FaQuestionCircle size={18} className="text-[#D67A1E]" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-800">Quiz Generator</h2>
@@ -95,18 +95,18 @@ const QuizGenerator = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                   isDragging
-                    ? "border-purple-400 bg-purple-50"
-                    : "border-gray-200 bg-gray-50 hover:border-purple-300 hover:bg-purple-50/40"
+                    ? "border-[#D67A1E] bg-gray-50"
+                    : "border-gray-200 bg-gray-50 hover:border-[#D67A1E] hover:bg-gray-50/40"
                 }`}
               >
-                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <FaFile size={20} className="text-purple-400" />
+                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <FaFile size={20} className="text-[#D67A1E]" />
                 </div>
                 <p className="text-sm font-semibold text-gray-600 mb-1">
                   Drop your file here
                 </p>
                 <p className="text-xs text-gray-400 mb-3">or click to browse</p>
-                <span className="text-xs text-purple-500 bg-purple-50 border border-purple-100 px-3 py-1 rounded-full">
+                <span className="text-xs text-[#D67A1E] bg-gray-50 border border-gray-100 px-3 py-1 rounded-full">
                   PDF, DOC, DOCX, TXT
                 </span>
                 <input
@@ -118,9 +118,9 @@ const QuizGenerator = () => {
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-3 bg-purple-50 border border-purple-100 rounded-xl p-4">
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FaFile size={16} className="text-purple-500" />
+              <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-4">
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <FaFile size={16} className="text-[#D67A1E]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-700 truncate">
@@ -154,7 +154,7 @@ const QuizGenerator = () => {
                 max="20"
                 value={numQ}
                 onChange={(e) => setNumQ(e.target.value)}
-                className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-purple-300 focus:bg-white transition-colors"
+                className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-gray-300 focus:bg-white transition-colors"
               />
             </div>
             <div>
@@ -164,7 +164,7 @@ const QuizGenerator = () => {
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
-                className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-purple-300 focus:bg-white transition-colors"
+                className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-gray-300 focus:bg-white transition-colors"
               >
                 {["Easy", "Medium", "Hard"].map((d) => (
                   <option key={d}>{d}</option>
@@ -177,7 +177,7 @@ const QuizGenerator = () => {
             onClick={() => uploadedFile && setGenerated(true)}
             className={`w-full py-3 rounded-xl text-white text-sm font-semibold transition-all ${
               uploadedFile
-                ? "bg-purple-500 hover:bg-purple-600 shadow-sm"
+                ? "bg-[#D67A1E] hover:bg-[#D67A1E] shadow-sm"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}
           >
@@ -215,7 +215,7 @@ const QuizGenerator = () => {
                         key={opt}
                         className="flex items-center gap-2.5 text-sm text-gray-500 cursor-pointer hover:text-gray-700 group"
                       >
-                        <span className="w-6 h-6 rounded-full border-2 border-gray-200 group-hover:border-purple-300 flex items-center justify-center text-xs font-semibold transition-colors flex-shrink-0">
+                        <span className="w-6 h-6 rounded-full border-2 border-gray-200 group-hover:border-gray-300 flex items-center justify-center text-xs font-semibold transition-colors flex-shrink-0">
                           {opt}
                         </span>
                         Sample answer option {opt}
@@ -492,14 +492,14 @@ const Toolbar = ({
       onClick={onAttach}
       className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium transition-colors shadow-sm ${
         attachedFiles?.length > 0
-          ? "border-[#465182] bg-white text-gray-600"
+          ? "border-[#1B2036] bg-white text-gray-600"
           : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
       }`}
     >
       <FaPaperclip size={12} />
       Attach
       {attachedFiles?.length > 0 && (
-        <span className="ml-1 bg-[#465182] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+        <span className="ml-1 bg-[#1B2036] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
           {attachedFiles.length}
         </span>
       )}
@@ -1016,7 +1016,7 @@ const ChatBot = () => {
         <div className="px-4 pb-3 space-y-1.5">
           <button
             onClick={handleNewChat}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold bg-[#465182] text-white hover:bg-[#323f7b] transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold bg-[#282f4f] text-white hover:bg-[#323f7b] transition-colors"
           >
             <FaPlus size={12} />
             New Chat
@@ -1025,8 +1025,8 @@ const ChatBot = () => {
             onClick={() => setActiveView("quiz")}
             className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
               activeView === "quiz"
-                ? "bg-purple-100 text-purple-700 ring-1 ring-purple-200"
-                : "bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600"
+                ? "bg-gray-100 text-[#D67A1E] ring-1 ring-gray-200"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-50 hover:text-[#D67A1E]"
             }`}
           >
             <FaQuestionCircle size={13} />
@@ -1039,8 +1039,8 @@ const ChatBot = () => {
             onClick={() => setActiveView("presentation")}
             className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
               activeView === "presentation"
-                ? "bg-purple-100 text-purple-700 ring-1 ring-purple-200"
-                : "bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-800"
+                ? "bg-gray-100 text-[#D67A1E] ring-1 ring-gray-200"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-50 hover:text-[#D67A1E]"
             }`}
           >
             <MdOutlineSlideshow size={15} />
@@ -1170,14 +1170,14 @@ const ChatBot = () => {
           <div
             className={`w-7 h-7 rounded-lg flex items-center justify-center ${
               activeView === "quiz"
-                ? "bg-purple-100"
+                ? "bg-orange-100"
                 : activeView === "presentation"
                   ? "bg-orange-100"
                   : ""
             }`}
           >
             {activeView === "quiz" && (
-              <FaQuestionCircle size={13} className="text-purple-500" />
+              <FaQuestionCircle size={13} className="text-[#D67A1E]" />
             )}
             {activeView === "presentation" && (
               <MdOutlineSlideshow size={15} className="text-[#D67A1E]" />

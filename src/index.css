@@ -44,4 +44,17 @@
   .font-tiro-devanagari {
     font-family: "Tiro Devanagari Hindi", serif;
   }
+  nav::-webkit-scrollbar {
+    width: 4px;
+  }
+  nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 99px;
+  }
+  nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
 }

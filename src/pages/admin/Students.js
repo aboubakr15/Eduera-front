@@ -8,7 +8,8 @@ import {
   FaUserGraduate,
 } from "react-icons/fa";
 import { adminApi } from "../../api/adminApi";
-
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 const Students = () => {
   const [students, setStudents] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -28,8 +29,8 @@ const Students = () => {
     try {
       setLoading(true);
       const [studentsRes, summaryRes] = await Promise.all([
-        adminApi.getUsers('STUDENT'),
-        adminApi.getDashboardSummary()
+        adminApi.getUsers("STUDENT"),
+        adminApi.getDashboardSummary(),
       ]);
       setStudents(studentsRes.data);
       if (summaryRes.data.departments) {
@@ -44,19 +45,22 @@ const Students = () => {
 
   const getDepartmentName = (deptId) => {
     if (!deptId) return "-";
-    const dept = departments.find(d => d.id === deptId || d.id === parseInt(deptId));
+    const dept = departments.find(
+      (d) => d.id === deptId || d.id === parseInt(deptId),
+    );
     return dept?.name || "-";
   };
 
   const filtered = students.filter((s) => {
     const searchLower = search.toLowerCase();
-    const studentId = s.id?.toString() || s.student_id?.toString() || '';
+    const studentId = s.id?.toString() || s.student_id?.toString() || "";
     const matchSearch =
       s.full_name?.toLowerCase().includes(searchLower) ||
       s.email?.toLowerCase().includes(searchLower) ||
       studentId.includes(search);
     const studentDeptId = s.department_id || s.department;
-    const matchDept = department === "All" || studentDeptId === parseInt(department);
+    const matchDept =
+      department === "All" || studentDeptId === parseInt(department);
     return matchSearch && matchDept;
   });
 
@@ -82,10 +86,19 @@ const Students = () => {
   const pageIds = paginated.map((s) => s.id);
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
-
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen font-sans">
-      <div className="px-4 pt-4 pb-6 flex items-center justify-between">
+      <div className="px-4 pt-4 pb-6 flex items-center gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+        >
+          <ArrowLeft
+            size={20}
+            className="transition-transform group-hover:-translate-x-1"
+          />
+        </button>
         <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
           Students
         </h1>
@@ -119,10 +132,16 @@ const Students = () => {
                 }}
                 className="appearance-none bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 pr-8 text-sm text-gray-700 outline-none cursor-pointer"
               >
-                <option key="all" value="All">All</option>
-                {departments.length > 0 ? departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                )) : (
+                <option key="all" value="All">
+                  All
+                </option>
+                {departments.length > 0 ? (
+                  departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))
+                ) : (
                   <>
                     <option value={1}>Computer Science</option>
                     <option value={2}>Artificial Intelligence</option>
@@ -189,12 +208,14 @@ const Students = () => {
               </tr>
             ) : (
               paginated.map((student, index) => {
-                const studentId = student.id?.id || student.id || student.student_id || index;
+                const studentId =
+                  student.id?.id || student.id || student.student_id || index;
                 return (
                   <tr
                     key={studentId}
-                    className={`border-b border-gray-100 transition-colors hover:bg-gray-50 ${selected.includes(studentId) ? "bg-blue-50" : ""
-                      }`}
+                    className={`border-b border-gray-100 transition-colors hover:bg-gray-50 ${
+                      selected.includes(studentId) ? "bg-blue-50" : ""
+                    }`}
                   >
                     <td className="px-4 py-3">
                       <input
@@ -206,7 +227,10 @@ const Students = () => {
                     </td>
                     <td className="py-3 pl-2">
                       <img
-                        src={student.profile_picture_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${studentId}`}
+                        src={
+                          student.profile_picture_url ||
+                          `https://api.dicebear.com/7.x/adventurer/svg?seed=${studentId}`
+                        }
                         alt={student.full_name}
                         className="w-9 h-9 rounded-full bg-gray-100 object-cover"
                       />
@@ -221,7 +245,9 @@ const Students = () => {
                       {student.email}
                     </td>
                     <td className="py-3 px-2 text-sm font-semibold text-gray-700">
-                      {getDepartmentName(student.department_id || student.department)}
+                      {getDepartmentName(
+                        student.department_id || student.department,
+                      )}
                     </td>
                   </tr>
                 );
@@ -242,10 +268,11 @@ const Students = () => {
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`w-7 h-7 rounded-full text-sm font-medium transition-colors ${page === p
-                ? "bg-[#D67A1E] text-white"
-                : "text-gray-500 hover:bg-gray-100"
-                }`}
+              className={`w-7 h-7 rounded-full text-sm font-medium transition-colors ${
+                page === p
+                  ? "bg-[#D67A1E] text-white"
+                  : "text-gray-500 hover:bg-gray-100"
+              }`}
             >
               {p}
             </button>
