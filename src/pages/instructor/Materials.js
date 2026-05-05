@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { FaPlus, FaFileAlt, FaArrowRight } from "react-icons/fa";
+import {
+  FaPlus,
+  FaFileAlt,
+  FaArrowRight,
+  FaTrash,
+  FaExclamationTriangle,
+} from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { instructorApi } from "../../api/instructorApi";
@@ -11,31 +17,47 @@ const InstructorMaterials = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [filterCourse, setFilterCourse] = useState("");
+  const [filterMaterialType, setFilterMaterialType] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
   const [newMaterial, setNewMaterial] = useState({
     course_offering: "",
     title: "",
     description: "",
     material_type: "LECTURE",
-    file_type: "pdf",
   });
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const [materialsRes, coursesRes] = await Promise.all([
-          instructorApi.getMaterials(),
-          instructorApi.getCourses(),
-        ]);
-        setMaterials(materialsRes.data);
-        setCourses(coursesRes.data);
+        const coursesRes = await instructorApi.getCourses();
+        const coursesData = Array.isArray(coursesRes.data)
+          ? coursesRes.data
+          : coursesRes.data.results || [];
+        setCourses(coursesData);
       } catch (err) {
-        console.error("Failed to fetch:", err);
-        setError("Failed to load data");
-      } finally {
-        setLoading(false);
+        console.error("Failed to fetch courses:", err);
       }
+
+      try {
+        const materialsRes = await instructorApi.getMaterials();
+        const materialsData = Array.isArray(materialsRes.data)
+          ? materialsRes.data
+          : materialsRes.data.results || [];
+        setMaterials(materialsData);
+      } catch (err) {
+        console.error("Failed to fetch materials:", err);
+        setError("Failed to load materials");
+      }
+      setLoading(false);
     };
     fetchData();
   }, []);
@@ -44,8 +66,6 @@ const InstructorMaterials = () => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
-      const ext = file.name.split(".").pop().toLowerCase();
-      setNewMaterial((prev) => ({ ...prev, file_type: ext }));
     } else {
       setSelectedFile(null);
     }
@@ -53,19 +73,27 @@ const InstructorMaterials = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    setSubmitError(null);
+    setSubmitting(true);
+
     try {
       const formData = new FormData();
       formData.append("course_offering", newMaterial.course_offering);
       formData.append("title", newMaterial.title);
       formData.append("description", newMaterial.description);
       formData.append("material_type", newMaterial.material_type);
-      formData.append("file_type", newMaterial.file_type);
+
       if (selectedFile) {
         formData.append("file", selectedFile);
+        const ext = selectedFile.name.split(".").pop().toLowerCase();
+        formData.append("file_type", ext);
       }
 
       const response = await instructorApi.createMaterial(formData);
-      setMaterials([response.data, ...materials]);
+
+      if (response.data) {
+        setMaterials([response.data, ...materials]);
+      }
 
       setShowModal(false);
       setSelectedFile(null);
@@ -74,16 +102,51 @@ const InstructorMaterials = () => {
         title: "",
         description: "",
         material_type: "LECTURE",
-        file_type: "pdf",
       });
     } catch (err) {
-      console.error("Failed to create material:", err);
+      console.error(
+        "Failed to create material:",
+        err.response?.data || err.message,
+      );
+      const errorMsg =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        JSON.stringify(err.response?.data) ||
+        "Failed to upload material. Please check all fields.";
+      setSubmitError(errorMsg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const filteredMaterials = filterCourse
-    ? materials.filter((m) => m.course_offering === parseInt(filterCourse))
-    : materials;
+  const openDeleteModal = (material) => {
+    setMaterialToDelete(material);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!materialToDelete) return;
+    setDeleting(true);
+    try {
+      await instructorApi.deleteMaterial(materialToDelete.id);
+      setMaterials(materials.filter((m) => m.id !== materialToDelete.id));
+      setShowDeleteModal(false);
+      setMaterialToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete material:", err);
+      setError("Failed to delete material");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const filteredMaterials = materials.filter((m) => {
+    const matchesCourse =
+      !filterCourse || m.course_offering === parseInt(filterCourse);
+    const matchesType =
+      !filterMaterialType || m.material_type === filterMaterialType;
+    return matchesCourse && matchesType;
+  });
 
   if (loading)
     return (
@@ -93,9 +156,9 @@ const InstructorMaterials = () => {
     );
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto p-4">
+    <div className="min-h-screen font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="px-4 pt-4 pb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
@@ -107,14 +170,11 @@ const InstructorMaterials = () => {
             />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Materials</h1>
-            <p className="text-sm text-gray-400 flex items-center gap-2 mt-0.5">
+            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+              Materials
+            </h1>
+            <p className="text-sm text-gray-400">
               Manage your course materials
-              {!error && materials.length > 0 && (
-                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-xs font-semibold">
-                  {filteredMaterials.length} Items
-                </span>
-              )}
             </p>
           </div>
         </div>
@@ -127,106 +187,198 @@ const InstructorMaterials = () => {
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 font-medium text-sm border border-red-100">
-          {error}
-        </div>
-      )}
+      <div className="mx-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Table Header Bar */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="font-bold text-gray-800 text-base">
+            Materials Information
+            {filteredMaterials.length > 0 && (
+              <span className="ml-2 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-xs font-semibold">
+                {filteredMaterials.length} Items
+              </span>
+            )}
+          </h2>
 
-      {!error && materials.length > 0 && (
-        <div className="mb-6">
-          <select
-            value={filterCourse}
-            onChange={(e) => setFilterCourse(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 bg-white outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all w-full max-w-xs"
-          >
-            <option value="">All Courses</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.course_name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Materials Grid */}
-      {!error && filteredMaterials.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredMaterials.map((m) => (
-            <div
-              key={m.id}
-              className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#5362a3] flex flex-col h-full"
+          <div className="flex items-center gap-3">
+            <select
+              value={filterCourse}
+              onChange={(e) => setFilterCourse(e.target.value)}
+              className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 bg-white outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center">
-                  <FaFileAlt className="text-[#D67A1E]" size={20} />
-                </div>
-                <span className="text-xs text-gray-400 font-medium bg-gray-50 px-2 py-1 rounded-md uppercase">
-                  {m.file_type || "File"}
-                </span>
-              </div>
+              <option value="">All Courses</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.course_name || c.course?.name || `Course #${c.id}`}
+                </option>
+              ))}
+            </select>
 
-              <div className="mb-4 flex-1">
-                <h3 className="text-base font-bold text-gray-800 leading-tight mb-1 line-clamp-2">
-                  {m.title}
-                </h3>
-                {m.description && (
-                  <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                    {m.description}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2.5 py-1.5 rounded-lg truncate max-w-[180px]">
-                  {m.course_name}
-                </span>
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg">
-                  {m.material_type}
-                </span>
-              </div>
-
-              <div className="mt-auto pt-4 border-t border-gray-50">
-                <a
-                  href={m.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-[#D67A1E] font-semibold hover:gap-3 transition-all duration-200"
-                >
-                  View File
-                  <FaArrowRight size={12} />
-                </a>
-              </div>
-            </div>
-          ))}
+            <select
+              value={filterMaterialType}
+              onChange={(e) => setFilterMaterialType(e.target.value)}
+              className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 bg-white outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all"
+            >
+              <option value="">All Types</option>
+              <option value="LECTURE">Lecture</option>
+              <option value="SECTION">Section</option>
+              <option value="ASSIGNMENT_DESC">Assignment</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
         </div>
-      )}
 
-      {!error && filteredMaterials.length === 0 && (
-        <div className="flex-1 flex items-center justify-center mt-20">
-          <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center max-w-sm w-full">
-            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FaFileAlt size={28} className="text-gray-300" />
+        {/* Table */}
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-6">
+                Title
+              </th>
+              <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-4">
+                Course
+              </th>
+              <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-4">
+                Type
+              </th>
+              <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-4">
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredMaterials.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-center py-16 text-gray-300">
+                  <FaFileAlt size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">
+                    {filterCourse || filterMaterialType
+                      ? "No materials match the selected filters."
+                      : "You haven't uploaded any materials yet."}
+                  </p>
+                </td>
+              </tr>
+            ) : (
+              filteredMaterials.map((m) => (
+                <tr
+                  key={m.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <td className="py-4 px-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <FaFileAlt className="text-[#D67A1E]" size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-800 truncate">
+                          {m.title}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {m.description || "No description"}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 text-sm text-gray-600 font-medium">
+                    {m.course_name || m.course?.name || "-"}
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                      {m.material_type === "ASSIGNMENT_DESC"
+                        ? "Assignment"
+                        : m.material_type}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={m.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center mr-10 text-sm text-[#D67A1E] font-semibold hover:underline"
+                      >
+                        View File
+                      </a>
+                      <button
+                        onClick={() => openDeleteModal(m)}
+                        className=" text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete Material"
+                      >
+                        <FaTrash size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ✅ Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-gray-100 my-8 text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaExclamationTriangle className="text-red-500" size={28} />
             </div>
-            <h3 className="text-lg font-bold text-gray-700 mb-1">
-              No Materials Found
-            </h3>
-            <p className="text-sm text-gray-400">
-              {filterCourse
-                ? "No materials found for this specific course."
-                : "You haven't uploaded any materials yet."}
+            <h2 className="text-xl font-bold text-gray-800 mb-2">
+              Delete Material
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-gray-800">
+                "{materialToDelete?.title}"
+              </span>
+              ? This action cannot be undone.
             </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setMaterialToDelete(null);
+                }}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className={`flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium transition-opacity shadow-sm flex items-center justify-center gap-2 ${
+                  deleting
+                    ? "opacity-60 cursor-not-allowed"
+                    : "hover:opacity-90"
+                }`}
+              >
+                {deleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Upload Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-gray-100 my-8 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-gray-800 mb-6">
               Upload Material
             </h2>
+
+            {submitError && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 font-medium text-xs border border-red-100">
+                {submitError}
+              </div>
+            )}
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
@@ -245,11 +397,15 @@ const InstructorMaterials = () => {
                   required
                 >
                   <option value="">Select course</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.course_name}
-                    </option>
-                  ))}
+                  {courses.length > 0 ? (
+                    courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.course_name || c.course?.name || `Course #${c.id}`}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No courses available</option>
+                  )}
                 </select>
               </div>
 
@@ -342,6 +498,7 @@ const InstructorMaterials = () => {
                   onClick={() => {
                     setShowModal(false);
                     setSelectedFile(null);
+                    setSubmitError(null);
                   }}
                   className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
@@ -349,9 +506,21 @@ const InstructorMaterials = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-[#1B2036] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity shadow-sm"
+                  disabled={submitting}
+                  className={`flex-1 px-4 py-2.5 bg-[#1B2036] text-white rounded-xl text-sm font-medium transition-opacity shadow-sm flex items-center justify-center gap-2 ${
+                    submitting
+                      ? "opacity-60 cursor-not-allowed"
+                      : "hover:opacity-90"
+                  }`}
                 >
-                  Upload Material
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    "Upload Material"
+                  )}
                 </button>
               </div>
             </form>
