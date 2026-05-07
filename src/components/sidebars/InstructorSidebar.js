@@ -17,6 +17,7 @@ import {
   FaFileUpload,
   FaSignOutAlt,
   FaUserTie,
+  FaRobot,
   FaChalkboardTeacher,
   FaChevronDown,
 } from "react-icons/fa";
@@ -56,6 +57,8 @@ const managementItems = [
   { label: "Students", icon: <MdPeople size={18} /> },
   { label: "Announcements", icon: <MdAnnouncement size={18} /> },
   { label: "Chat", icon: <MdChat size={20} /> },
+  { label: "ChatBot", icon: <FaRobot size={18} /> },
+  { label: "UploadCenter", icon: <FaRobot size={18} /> },
 ];
 
 const bottomNavItems = [

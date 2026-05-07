@@ -1,122 +1,391 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { studentApi } from "../../api/studentApi";
-import { FaPaperPlane, FaRobot } from "react-icons/fa";
+import {
+  FaPaperPlane,
+  FaComments,
+  FaBook,
+  FaUsers,
+  FaCrown,
+} from "react-icons/fa";
+import { ArrowLeft } from "lucide-react";
+
+const getAvatarColor = (name) => {
+  if (!name) return "bg-gray-400";
+  const colors = [
+    "bg-blue-500",
+    "bg-emerald-500",
+    "bg-amber-500",
+    "bg-rose-500",
+    "bg-purple-500",
+    "bg-cyan-500",
+    "bg-pink-500",
+    "bg-indigo-500",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
 
 const StudentChat = () => {
+  const [courses, setCourses] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const userId =
+      localStorage.getItem("userId") ||
+      localStorage.getItem("student_id") ||
+      localStorage.getItem("user_id") ||
+      null;
+    setCurrentUserId(userId);
+
+    const fetchCourses = async () => {
       try {
-        const response = await studentApi.getChatHistory();
-        setMessages(response.data);
+        const response = await studentApi.getCourses();
+        setCourses(response.data || []);
       } catch (err) {
-        console.error("Failed to fetch chat history:", err);
+        console.error("Failed to fetch courses:", err);
+        setCourses([]);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchHistory();
+    fetchCourses();
   }, []);
+
+  useEffect(() => {
+    if (!selectedCourse) return;
+
+    const fetchMessages = async () => {
+      try {
+        const response = await studentApi.getCourseChat(selectedCourse.id);
+        setMessages(response.data || []);
+      } catch (err) {
+        console.error("Failed to fetch messages:", err);
+      }
+    };
+
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 5000);
+    return () => clearInterval(interval);
+  }, [selectedCourse]);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedCourse) return;
+
+    setSending(true);
+    try {
+      const response = await studentApi.sendCourseMessage(selectedCourse.id, {
+        content: newMessage.trim(),
+      });
+      setMessages((prev) => [response.data, ...prev]);
+      setNewMessage("");
+    } catch (err) {
+      console.error("Failed to send:", err);
+    } finally {
+      setSending(false);
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
-
-    const userMessage = { role: "USER", content: input, timestamp: new Date().toISOString() };
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await studentApi.sendChatMessage({ content: input });
-      const { user_message, ai_message } = response.data;
-      setMessages(prev => [...prev, ai_message]);
-    } catch (err) {
-      console.error("Failed to send message:", err);
-      setError("Failed to send message");
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#F8F9FB]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#D67A1E]"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden p-4">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-800">AI Assistant</h1>
-        <p className="text-sm text-gray-400">Ask questions and get help with your courses</p>
-      </div>
-
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <FaRobot size={48} className="mb-4" />
-              <p className="text-lg font-medium">How can I help you today?</p>
-              <p className="text-sm">Ask me about your courses, assignments, or any academic question</p>
-            </div>
-          ) : (
-            messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex ${msg.role === "USER" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[70%] p-3 rounded-2xl ${
-                    msg.role === "USER"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  <p className="text-sm">{msg.content}</p>
-                  <p className={`text-xs mt-1 ${msg.role === "USER" ? "text-blue-200" : "text-gray-400"}`}>
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 p-3 rounded-2xl">
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></span>
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+    <div className="flex-1 flex overflow-hidden h-screen bg-[#F8F9FB]">
+      {/* Sidebar */}
+      <div className="w-72 bg-white border-r border-gray-200/50 flex flex-col flex-shrink-0">
+        <div className="p-4 pb-3">
+          <div className="flex items-center gap-2.5 mb-0.5">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center text-gray-400 hover:text-[#465182] transition-all group"
+            >
+              <ArrowLeft
+                size={18}
+                className="transition-transform group-hover:-translate-x-0.5"
+              />
+            </button>
+            <h1 className="text-[15px] font-bold text-gray-800 flex items-center gap-2">
+              <FaComments size={14} className="text-[#D67A1E]" />
+              Course Chats
+            </h1>
+          </div>
+          <p className="text-[11px] text-gray-400 ml-[30px] font-medium">
+            {courses.length} active course{courses.length !== 1 ? "s" : ""}
+          </p>
         </div>
 
-        <form onSubmit={handleSend} className="p-4 border-t border-gray-100">
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <FaPaperPlane size={16} />
-              Send
-            </button>
+        <div className="flex-1 overflow-y-auto px-2.5 pb-3 space-y-0.5">
+          {courses.length > 0 ? (
+            courses.map((course) => {
+              const isActive = selectedCourse?.id === course.id;
+              return (
+                <button
+                  key={course.id}
+                  onClick={() => setSelectedCourse(course)}
+                  className={`w-full text-left p-3 rounded-xl flex items-start gap-3 transition-all duration-200 ${
+                    isActive
+                      ? "bg-[#465182] text-white shadow-lg shadow-[#465182]/15"
+                      : "hover:bg-gray-50 text-gray-800"
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                      isActive
+                        ? "bg-white/15 text-white"
+                        : "bg-[#D67A1E]/[0.08] text-[#D67A1E]"
+                    }`}
+                  >
+                    <FaBook size={11} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold truncate">
+                      {course.course_name}
+                    </p>
+                    <p
+                      className={`text-[11px] truncate mt-0.5 ${
+                        isActive ? "text-gray-300" : "text-gray-400"
+                      }`}
+                    >
+                      {course.course_code} · {course.semester} {course.year}
+                    </p>
+                    <div
+                      className={`flex items-center gap-1 mt-1.5 ${
+                        isActive ? "text-gray-400" : "text-gray-400"
+                      }`}
+                    >
+                      <FaUsers size={9} />
+                      <span className="text-[10px] font-medium">
+                        {course.enrolled_count || 0} students
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })
+          ) : (
+            <div className="flex flex-col items-center justify-center pt-20 text-center px-4">
+              <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-3 ring-1 ring-gray-100">
+                <FaComments size={22} className="text-gray-300" />
+              </div>
+              <p className="text-[13px] font-semibold text-gray-500">
+                No Courses
+              </p>
+              <p className="text-[11px] text-gray-400 mt-1 max-w-[180px]">
+                Assign courses to see group chats here.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {selectedCourse ? (
+          <>
+            {/* Header */}
+            <div className="bg-white px-5 py-3 border-b border-gray-200/50 flex items-center gap-3 flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-[#D67A1E]/[0.08] flex items-center justify-center flex-shrink-0 border border-[#D67A1E]/10">
+                <FaBook size={14} className="text-[#D67A1E]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold text-gray-800 truncate">
+                  {selectedCourse.course_name}
+                </p>
+                <p className="text-[11px] text-gray-400 font-medium">
+                  {selectedCourse.course_code} · {selectedCourse.semester}{" "}
+                  {selectedCourse.year}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100">
+                <FaUsers size={11} className="text-gray-400" />
+                <span className="text-[11px] text-gray-500 font-semibold">
+                  {selectedCourse.enrolled_count || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              {messages.length > 0 ? (
+                messages.map((msg, index) => {
+                  const isInstructor = msg.sender_role === "INSTRUCTOR";
+                  const isMe = msg.sender_id === currentUserId;
+                  const senderName =
+                    msg.sender_name ||
+                    msg.full_name ||
+                    msg.student_name ||
+                    "User";
+                  const showLabel =
+                    index === 0 ||
+                    messages[index - 1]?.sender_id !== msg.sender_id;
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-2.5 ${
+                        isMe ? "flex-row-reverse" : ""
+                      }`}
+                    >
+                      {/* Avatar */}
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-6 text-white font-bold text-[10px] ${
+                          isMe
+                            ? "bg-[#465182]"
+                            : isInstructor
+                              ? "bg-gradient-to-br from-[#D67A1E] to-[#b86a15] ring-2 ring-[#D67A1E]/15"
+                              : getAvatarColor(senderName)
+                        }`}
+                      >
+                        {isMe ? "Me" : senderName?.charAt(0)}
+                      </div>
+
+                      {/* Bubble */}
+                      <div
+                        className={`max-w-[65%] flex flex-col ${
+                          isMe ? "items-end" : "items-start"
+                        }`}
+                      >
+                        {showLabel && (
+                          <div
+                            className={`flex items-center gap-1.5 mb-1 px-0.5 ${
+                              isMe ? "flex-row-reverse" : ""
+                            }`}
+                          >
+                            <span
+                              className={`text-[11px] font-semibold ${
+                                isMe
+                                  ? "text-[#465182]"
+                                  : isInstructor
+                                    ? "text-[#D67A1E]"
+                                    : "text-gray-500"
+                              }`}
+                            >
+                              {isMe
+                                ? "You"
+                                : isInstructor
+                                  ? senderName
+                                  : senderName?.split(" ")[0]}
+                            </span>
+                            {isInstructor && (
+                              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-[#D67A1E] bg-[#D67A1E]/[0.08] px-1.5 py-0.5 rounded-md border border-[#D67A1E]/10">
+                                <FaCrown size={7} />
+                                Instructor
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        <div
+                          className={`px-3.5 py-2.5 ${
+                            isMe
+                              ? "bg-[#465182] text-white rounded-2xl rounded-tr-lg shadow-md shadow-[#465182]/10"
+                              : isInstructor
+                                ? "bg-white text-gray-800 rounded-2xl rounded-tl-lg border border-[#D67A1E]/15 shadow-sm ring-1 ring-[#D67A1E]/5"
+                                : "bg-white text-gray-800 rounded-2xl rounded-tl-lg border border-gray-200/50 shadow-sm"
+                          }`}
+                        >
+                          <p className="text-[13px] leading-relaxed whitespace-pre-wrap break-words">
+                            {msg.content}
+                          </p>
+                        </div>
+
+                        <p
+                          className={`text-[10px] mt-0.5 px-0.5 text-gray-400 font-medium ${
+                            isMe ? "text-right" : ""
+                          }`}
+                        >
+                          {new Date(
+                            msg.created_at || msg.timestamp,
+                          ).toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm ring-1 ring-gray-100">
+                      <FaComments size={24} className="text-gray-300" />
+                    </div>
+                    <p className="text-[14px] font-bold text-gray-600">
+                      No messages yet
+                    </p>
+                    <p className="text-[12px] text-gray-400 mt-1">
+                      Start the conversation by saying hello
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="bg-white border-t border-gray-200/50 px-5 py-3 flex-shrink-0">
+              <form
+                onSubmit={handleSendMessage}
+                className="flex items-center gap-2.5"
+              >
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder={`Message #${selectedCourse.course_code}...`}
+                  className="flex-1 text-[13px] border border-gray-200/60 rounded-xl px-4 py-2.5 outline-none focus:border-[#465182]/25 focus:ring-2 focus:ring-[#465182]/5 bg-[#F8F9FB] transition-all duration-200 placeholder-gray-400"
+                  disabled={sending}
+                />
+                <button
+                  type="submit"
+                  disabled={!newMessage.trim() || sending}
+                  className="w-9 h-9 rounded-xl bg-[#465182] text-white flex items-center justify-center hover:bg-[#3a4570] transition-all duration-200 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-[#465182]/15 active:scale-95"
+                >
+                  <FaPaperPlane size={12} />
+                </button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center relative">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#465182]/[0.015] rounded-full blur-3xl" />
+              <div className="absolute bottom-1/3 right-1/3 w-[350px] h-[350px] bg-[#D67A1E]/[0.015] rounded-full blur-3xl" />
+            </div>
+            <div className="text-center relative z-10">
+              <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-gray-200/20 ring-1 ring-gray-100">
+                <FaComments size={30} className="text-gray-300" />
+              </div>
+              <p className="text-[18px] font-bold text-gray-700 tracking-tight">
+                Select a Course
+              </p>
+              <p className="text-[13px] text-gray-400 mt-1.5 max-w-[260px] mx-auto">
+                Choose a course from the sidebar to view its group chat.
+              </p>
+            </div>
           </div>
-        </form>
+        )}
       </div>
     </div>
   );

@@ -31,6 +31,7 @@ import StudentTodo from "../pages/student/Todo";
 import StudentProfile from "../pages/student/Profile";
 import StudentChat from "../pages/student/Chat";
 import StudentNotifications from "../pages/student/Notifications";
+import StudentChatBot from "../pages/student/ChatBot";
 
 import InstructorDashboard from "../pages/instructor/Dashboard";
 import InstructorCourses from "../pages/instructor/Courses";
@@ -42,6 +43,8 @@ import InstructorAnnouncements from "../pages/instructor/Announcements";
 import InstructorChat from "../pages/instructor/Chat";
 import InstructorNotifications from "../pages/instructor/Notifications";
 import InstructorAccount from "../pages/instructor/Account";
+import InstructorChatBot from "../pages/instructor/ChatBot";
+import InstructorUploadCenter from "../pages/instructor/UploadCenter";
 
 import InstructorCourseDetails from "../pages/instructor/CourseDetails";
 
@@ -94,6 +97,7 @@ export const router = createBrowserRouter([
           { path: "profile", element: <StudentProfile /> },
           { path: "chat", element: <StudentChat /> },
           { path: "notifications", element: <StudentNotifications /> },
+          { path: "chatbot", element: <StudentChatBot /> },
         ],
       },
     ],
@@ -117,6 +121,8 @@ export const router = createBrowserRouter([
           { path: "chat", element: <InstructorChat /> },
           { path: "notifications", element: <InstructorNotifications /> },
           { path: "account", element: <InstructorAccount /> },
+          { path: "chatbot", element: <InstructorChatBot /> },
+          { path: "uploadcenter", element: <InstructorUploadCenter /> },
         ],
       },
     ],

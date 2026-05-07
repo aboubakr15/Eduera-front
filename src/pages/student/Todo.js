@@ -328,7 +328,6 @@ const StudentTodo = () => {
 
           {isExpanded && (
             <div className="mt-3 space-y-3 pt-3 border-t border-dashed border-gray-200">
-              {/* Course Select */}
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
                   Course
@@ -349,7 +348,6 @@ const StudentTodo = () => {
                 </select>
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
                   Details
@@ -365,7 +363,6 @@ const StudentTodo = () => {
                 />
               </div>
 
-              {/* Priority */}
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
                   Priority
@@ -408,7 +405,6 @@ const StudentTodo = () => {
                 </div>
               </div>
 
-              {/* Due Date */}
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">
                   Due Date
@@ -427,7 +423,6 @@ const StudentTodo = () => {
         </form>
       </div>
 
-      {/* Delete Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-gray-100 my-8 text-center">

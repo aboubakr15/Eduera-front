@@ -17,6 +17,7 @@ import {
 import {
   FaBook,
   FaClipboardList,
+  FaRobot,
   FaSignOutAlt,
   FaUserGraduate,
   FaChevronDown,
@@ -57,15 +58,16 @@ const academicItems = [
   },
   { label: "Grades", icon: <MdGrade size={18} />, path: "/student/grades" },
   { label: "To-Do", icon: <MdCheckCircle size={18} />, path: "/student/todo" },
+  { label: "ChatBot", icon: <FaRobot size={18} />, path: "/student/chatbot" },
 ];
 
 const communicationItems = [
   { label: "Chat", icon: <MdChat size={20} />, path: "/student/chat" },
-  {
-    label: "Notifications",
-    icon: <MdNotifications size={20} />,
-    path: "/student/notifications",
-  },
+  // {
+  //   label: "Notifications",
+  //   icon: <MdNotifications size={20} />,
+  //   path: "/student/notifications",
+  // },
 ];
 
 const bottomNavItems = [
@@ -89,7 +91,6 @@ const StudentSidebar = () => {
         isOpen ? "w-60" : "w-16"
       }`}
     >
-      {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="absolute -right-3 top-6 z-10 w-6 h-6 bg-[#1B2036] border border-gray-600 rounded-full flex items-center justify-center shadow-sm hover:bg-[#252b45] transition-colors"
@@ -101,7 +102,6 @@ const StudentSidebar = () => {
         )}
       </button>
 
-      {/* Logo */}
       <div
         className={`flex items-center px-4 py-4 overflow-hidden transition-all duration-300 ${
           !isOpen ? "justify-center" : ""
@@ -119,7 +119,6 @@ const StudentSidebar = () => {
         )}
       </div>
 
-      {/* Profile Section with Dropdown */}
       <div className="mx-2 mb-4 relative">
         <div
           onClick={() => isOpen && setProfileOpen(!profileOpen)}
@@ -150,7 +149,6 @@ const StudentSidebar = () => {
           )}
         </div>
 
-        {/* Dropdown Menu */}
         {isOpen && profileOpen && (
           <div className="mt-1 bg-[#252b45] border border-white/10 rounded-xl shadow-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-white/10">
@@ -170,9 +168,7 @@ const StudentSidebar = () => {
         )}
       </div>
 
-      {/* Navigation Links */}
       <nav className="flex-1 px-2 overflow-y-auto">
-        {/* Overview Section */}
         {isOpen && (
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-3 mb-1">
             Overview
@@ -212,7 +208,6 @@ const StudentSidebar = () => {
           ))}
         </div>
 
-        {/* Academic Section */}
         {isOpen && (
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-3 mt-4 mb-1">
             Academics
@@ -252,7 +247,6 @@ const StudentSidebar = () => {
           ))}
         </div>
 
-        {/* Communication Section */}
         {isOpen && (
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-3 mt-4 mb-1">
             Communication
@@ -295,7 +289,6 @@ const StudentSidebar = () => {
 
       <div className="mx-4 my-1 border-t border-white/10" />
 
-      {/* Bottom Nav */}
       <nav className="px-2 pb-6 space-y-0.5">
         {bottomNavItems.map((item) => (
           <NavLink

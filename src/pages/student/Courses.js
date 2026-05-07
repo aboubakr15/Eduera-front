@@ -87,7 +87,6 @@ const StudentCourses = () => {
         </div>
       </div>
 
-      {/* Search and Filters Section */}
       <div className="mb-6 flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <FaSearch
@@ -188,7 +187,6 @@ const StudentCourses = () => {
                 )}
               </div>
 
-              {/* Footer Action */}
               <div className="mt-auto pt-4 border-t border-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -216,7 +214,6 @@ const StudentCourses = () => {
         </div>
       )}
 
-      {/* Empty State */}
       {!error && filteredCourses.length === 0 && (
         <div className="flex-1 flex items-center justify-center mt-20">
           <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center max-w-sm w-full">

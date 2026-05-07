@@ -8,7 +8,6 @@ const StudentEnrollments = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // ✅ خلينا الفلتر الافتراضي يبقى ACTIVE عشان يظهر الكورسات الشغالة على طول
   const [filter, setFilter] = useState("ACTIVE");
   const navigate = useNavigate();
 
@@ -77,7 +76,6 @@ const StudentEnrollments = () => {
         </div>
       </div>
 
-      {/* Filter Tabs - تم إزالة All */}
       <div className="flex gap-2 mb-6">
         {["ACTIVE", "COMPLETED", "DROPPED"].map((status) => (
           <button
@@ -100,14 +98,12 @@ const StudentEnrollments = () => {
         </div>
       )}
 
-      {/* Enrollments List */}
       <div className="space-y-4 pb-8">
         {enrollments.map((enrollment) => (
           <div
             key={enrollment.id}
             className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 border-l-4 border-l-[#5362a3] flex items-center justify-between"
           >
-            {/* Left Side */}
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <FaBook className="text-[#D67A1E]" size={16} />
@@ -126,7 +122,6 @@ const StudentEnrollments = () => {
               </div>
             </div>
 
-            {/* Right Side */}
             <div className="flex items-center gap-3 flex-shrink-0 ml-4">
               {enrollment.grade && (
                 <span className="text-sm font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">

@@ -1,9 +1,9 @@
-import { useState } from "react"; // ← مهم جداً! كنتي ناسية الـ import ده
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronDown } from "lucide-react";
+import { Bell } from "lucide-react";
 import Avatar from "../assets/images/man.png";
 
-const staticNotifications = [
+const instructorNotifications = [
   {
     id: 1,
     text: "New assignment 'Midterm Review' has been posted",
@@ -30,17 +30,51 @@ const staticNotifications = [
   },
 ];
 
-const Topbar = ({ user }) => {
+const studentNotifications = [
+  {
+    id: 1,
+    text: "New assignment 'Midterm Review' has been posted in Deep Learning",
+    time: "1 hour ago",
+    isRead: false,
+  },
+  {
+    id: 2,
+    text: "Your grade for Assignment 1 is now available",
+    time: "3 hours ago",
+    isRead: false,
+  },
+  {
+    id: 3,
+    text: "New announcement in Data Structures course",
+    time: "Yesterday",
+    isRead: false,
+  },
+  {
+    id: 4,
+    text: 'Course "Machine Learning" material was updated',
+    time: "2 days ago",
+    isRead: true,
+  },
+  {
+    id: 5,
+    text: "Reminder: Quiz 3 deadline is tomorrow",
+    time: "2 days ago",
+    isRead: true,
+  },
+];
+
+const Topbar = ({ user, role = "instructor" }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   const segments = location.pathname.split("/").filter(Boolean);
-  const basePath = segments.length > 0 ? `/${segments[0]}` : ""; // ← الخطأ كان هنا
+  const basePath = segments.length > 0 ? `/${segments[0]}` : "";
 
   let title = "Dashboard";
-  if (basePath === "/dashboard")
-    title = "Dashboard"; // ← عدلت الشرط
-  else if (segments.length > 1) {
+  if (basePath === "/dashboard") {
+    title = "Dashboard";
+  } else if (segments.length > 1) {
     const lastSegment = segments[segments.length - 1];
     title = lastSegment
       .split("-")
@@ -48,10 +82,15 @@ const Topbar = ({ user }) => {
       .join(" ");
   }
 
+  const notifications =
+    role === "student" ? studentNotifications : instructorNotifications;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
   const userName = user?.name || user?.email?.split("@")[0] || "User";
-  const userRole = user?.primary_role || user?.role || "User";
-  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-  const unreadCount = staticNotifications.filter((n) => !n.isRead).length;
+  const userRole =
+    role === "student"
+      ? "Student"
+      : user?.primary_role || user?.role || "Instructor";
 
   return (
     <div className="h-14 bg-gray-100 flex items-center justify-between px-6 border-b border-gray-100">
@@ -74,56 +113,75 @@ const Topbar = ({ user }) => {
           </button>
 
           {showNotifDropdown && (
-            <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 z-50">
-              <div className="px-2 py-1.5 border-b border-gray-100 mb-1.5">
-                <p className="text-[11px] font-semibold text-gray-500">
-                  Notifications
-                </p>
-              </div>
-              <div className="space-y-0.5">
-                {staticNotifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer`}
-                    onClick={() => {
-                      setShowNotifDropdown(false);
-                      navigate(`${basePath}/notifications`);
-                    }}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0">
-                        {notif.isRead ? (
-                          <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                        ) : (
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#D67A1E]" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`text-xs leading-tight ${notif.isRead ? "text-gray-400" : "text-gray-800 font-medium"}`}
-                        >
-                          {notif.text}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {notif.time}
-                        </p>
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowNotifDropdown(false)}
+              />
+              <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 z-50">
+                <div className="px-2 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
+                  <p className="text-[11px] font-semibold text-gray-500">
+                    Notifications
+                  </p>
+                  {unreadCount > 0 && (
+                    <span className="text-[10px] font-bold text-[#D67A1E] bg-[#D67A1E]/[0.08] px-1.5 py-0.5 rounded-md">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-0.5 max-h-[320px] overflow-y-auto">
+                  {notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer ${
+                        !notif.isRead ? "bg-[#D67A1E]/[0.02]" : ""
+                      }`}
+                      onClick={() => {
+                        setShowNotifDropdown(false);
+                        navigate(`${basePath}/notifications`);
+                      }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0">
+                          <div
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              notif.isRead ? "bg-gray-300" : "bg-[#D67A1E]"
+                            }`}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-xs leading-tight ${
+                              notif.isRead
+                                ? "text-gray-400"
+                                : "text-gray-800 font-medium"
+                            }`}
+                          >
+                            {notif.text}
+                          </p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {notif.time}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                <div className="px-2 py-1.5 border-t border-gray-100 mt-1.5">
+                  <button
+                    onClick={() => {
+                      navigate(`${basePath}/notifications`);
+                      setShowNotifDropdown(false);
+                    }}
+                    className="w-full text-center text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg py-1.5 transition-colors"
+                  >
+                    Show All Notifications
+                  </button>
+                </div>
               </div>
-              <div className="px-2 py-1.5 border-t border-gray-100 mt-1.5">
-                <button
-                  onClick={() => {
-                    navigate(`${basePath}/notifications`);
-                    setShowNotifDropdown(false);
-                  }}
-                  className="w-full text-center text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg py-1.5 transition-colors"
-                >
-                  Show All Notifications
-                </button>
-              </div>
-            </div>
+            </>
           )}
         </div>
 

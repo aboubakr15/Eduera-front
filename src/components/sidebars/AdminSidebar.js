@@ -175,7 +175,6 @@ const AdminSidebar = () => {
           ))}
         </div>
 
-        {/* Management Section */}
         {isOpen && (
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-3 mt-4 mb-1">
             Management
@@ -212,7 +211,6 @@ const AdminSidebar = () => {
 
       <div className="mx-4 my-1 border-t border-white/10" />
 
-      {/* Bottom Nav */}
       <nav className="px-2 pb-6 space-y-0.5">
         {bottomNavItems.map((item) => (
           <NavLink

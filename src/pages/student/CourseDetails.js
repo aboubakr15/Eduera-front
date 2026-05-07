@@ -134,7 +134,6 @@ const StudentCourseDetails = () => {
           <div>
             <p className="text-xs text-gray-400">Teaching Assistant</p>
             <p className="text-sm font-bold text-gray-800">
-              {/* بنشوف لو الباك إند بيبعت الاسم بأي شكل من الشهور دي */}
               {course?.ta_name ||
                 course?.teaching_assistant_name ||
                 "Not Assigned"}
@@ -289,7 +288,6 @@ const StudentCourseDetails = () => {
   );
 };
 
-// Reusable Empty State Component
 const EmptyState = ({ icon, text }) => (
   <div className="flex-1 flex items-center justify-center mt-10">
     <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center max-w-sm w-full">
