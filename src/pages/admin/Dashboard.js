@@ -605,7 +605,7 @@ const Dashboard = () => {
 
   return (
     <div className="flex-1 flex overflow-hidden  min-h-screen">
-      <div className="flex-1 flex flex-col overflow-y-auto p-6">
+      <div className="flex-1 flex flex-col overflow-y-auto p-2">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
@@ -634,7 +634,7 @@ const Dashboard = () => {
         <div className="flex-1" />
       </div>
 
-      <div className="w-72 bg-white border-l border-gray-100 flex flex-col overflow-y-auto p-5 shadow-sm">
+      <div className="w-72 bg-white border-l border-gray-100 flex flex-col overflow-y-auto p-3 shadow-sm">
         <Calendar />
         <ScheduleSection />
       </div>

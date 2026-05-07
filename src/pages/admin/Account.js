@@ -1,12 +1,21 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Pencil, Camera, Eye, EyeOff } from "lucide-react";
+import { MdPerson, MdSettings, MdLock, MdDashboard } from "react-icons/md";
 import defaultAvatar from "../../assets/images/man.png";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { adminApi } from "../../api/adminApi";
 
-const SectionCard = ({ title, children }) => (
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-4">
-    <h3 className="text-base font-bold text-gray-800 mb-5">{title}</h3>
+const SectionCard = ({ title, children, icon: Icon }) => (
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/60 mb-4">
+    <div className="flex items-center gap-2 mb-5">
+      {Icon && (
+        <div className="w-7 h-7 rounded-lg bg-[#465182]/[0.06] flex items-center justify-center">
+          <Icon size={14} className="text-[#465182]" />
+        </div>
+      )}
+      <h3 className="text-base font-bold text-gray-800">{title}</h3>
+    </div>
     {children}
   </div>
 );
@@ -20,7 +29,7 @@ const PasswordInput = ({
   setPasswords,
 }) => (
   <div>
-    <p className="text-xs text-gray-400 font-medium mb-1">{label}</p>
+    <p className="text-xs text-gray-400 font-medium mb-1.5">{label}</p>
     <div className="relative">
       <input
         type={showPass[field] ? "text" : "password"}
@@ -28,14 +37,15 @@ const PasswordInput = ({
         onChange={(e) =>
           setPasswords((prev) => ({ ...prev, [field]: e.target.value }))
         }
-        className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 pr-9 outline-none focus:ring-2 focus:ring-blue-100"
+        className="w-full text-sm border border-gray-200/70 bg-[#FAFBFC] rounded-xl px-3.5 py-2.5 pr-9 outline-none focus:border-[#465182]/25 focus:bg-white focus:ring-2 focus:ring-[#465182]/5 transition-all duration-200"
         placeholder="••••••••"
       />
       <button
+        type="button"
         onClick={() =>
           setShowPass((prev) => ({ ...prev, [field]: !prev[field] }))
         }
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
       >
         {showPass[field] ? <EyeOff size={14} /> : <Eye size={14} />}
       </button>
@@ -47,17 +57,10 @@ const Account = () => {
   const navigate = useNavigate();
   const fileRef = useRef();
 
-  const [user, setUser] = useState({
-    firstName: "Shahd",
-    lastName: "Shaban",
-    email: "admin@admin.com",
-    role: "Admin",
-    university: "Helwan University",
-    language: "English",
-    timezone: "Africa/Cairo",
-    avatar: null,
-  });
-
+  const [profile, setProfile] = useState(null);
+  const [systemStats, setSystemStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editField, setEditField] = useState(null);
   const [tempValue, setTempValue] = useState("");
   const [passwords, setPasswords] = useState({
@@ -73,22 +76,51 @@ const Account = () => {
   const [passError, setPassError] = useState("");
   const [passSuccess, setPassSuccess] = useState("");
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, statsRes] = await Promise.all([
+          adminApi.getProfile(),
+          adminApi.getSystemStats(),
+        ]);
+        setProfile(profileRes.data);
+        setSystemStats(statsRes.data);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+        setError("Failed to load account data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const handleEdit = (field, value) => {
     setEditField(field);
     setTempValue(value);
   };
-  const handleSave = (field) => {
-    setUser((prev) => ({ ...prev, [field]: tempValue }));
-    setEditField(null);
+
+  const handleSave = async (field) => {
+    try {
+      const updateData = { [field]: tempValue };
+      await adminApi.updateProfile(updateData);
+      setProfile((prev) => ({ ...prev, [field]: tempValue }));
+      setEditField(null);
+    } catch (err) {
+      console.error("Failed to update:", err);
+      setError("Failed to update field");
+    }
   };
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
-    if (file)
-      setUser((prev) => ({ ...prev, avatar: URL.createObjectURL(file) }));
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setProfile((prev) => ({ ...prev, profile_picture_url: url }));
+    }
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     setPassError("");
     setPassSuccess("");
     if (!passwords.current || !passwords.new || !passwords.confirm)
@@ -97,88 +129,148 @@ const Account = () => {
       return setPassError("New passwords don't match.");
     if (passwords.new.length < 8)
       return setPassError("Password must be at least 8 characters.");
-    setPassSuccess("Password changed successfully!");
-    setPasswords({ current: "", new: "", confirm: "" });
+
+    try {
+      await adminApi.changePassword({
+        current_password: passwords.current,
+        new_password: passwords.new,
+        confirm_password: passwords.confirm,
+      });
+      setPassSuccess("Password changed successfully!");
+      setPasswords({ current: "", new: "", confirm: "" });
+    } catch (err) {
+      console.error("Failed to change password:", err);
+      setPassError(err?.response?.data?.message || "Failed to change password");
+    }
   };
 
   const fields = [
-    { label: "First Name", key: "firstName" },
-    { label: "Last Name", key: "lastName" },
-    { label: "Email", key: "email" },
-    { label: "User Role", key: "role", readonly: true },
-    { label: "University", key: "university" },
+    { label: "First Name", key: "first_name", value: profile?.first_name },
+    { label: "Last Name", key: "last_name", value: profile?.last_name },
+    { label: "Email", key: "email", value: profile?.email },
+    { label: "User Role", key: "role", value: "Admin", readonly: true },
+    { label: "University", key: "university", value: profile?.university },
   ];
 
   const stats = [
-    { label: "Total Students", value: 1200 },
-    { label: "Total Instructors", value: 85 },
-    { label: "Total Courses", value: 340 },
-    { label: "Total TAs", value: 210 },
+    {
+      label: "Total Students",
+      value: systemStats?.total_students || 0,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      border: "border-blue-100",
+    },
+    {
+      label: "Total Instructors",
+      value: systemStats?.total_instructors || 0,
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+      border: "border-purple-100",
+    },
+    {
+      label: "Total Courses",
+      value: systemStats?.total_courses || 0,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      border: "border-emerald-100",
+    },
+    {
+      label: "Total TAs",
+      value: systemStats?.total_tas || 0,
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      border: "border-amber-100",
+    },
   ];
 
+  const userName = profile
+    ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
+      profile.email?.split("@")[0]
+    : "Admin";
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-screen bg-[#F8F9FB]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#D67A1E]"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="ml-4 max-w-5xl">
+    <div className="ml-4 flex flex-col overflow-y-auto bg-[#ffffff] h-full">
+      {/* Header */}
       <div className="px-2 pt-4 pb-6 flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+          className="flex items-center text-gray-400 hover:text-[#465182] transition-all group"
         >
           <ArrowLeft
             size={18}
-            className="transition-transform group-hover:-translate-x-1"
+            className="transition-transform group-hover:-translate-x-0.5"
           />
         </button>
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
-          My Account
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+            My Account
+          </h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            Manage your personal information and system settings
+          </p>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 flex items-center justify-between shadow-sm border border-gray-100 mb-4">
-        <div className="flex items-center gap-4">
-          <div className="relative w-20 h-20">
-            <img
-              src={user.avatar || defaultAvatar}
-              className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-            />
-            <button
-              onClick={() => fileRef.current.click()}
-              className="absolute bottom-0 right-0 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow hover:shadow-md transition"
-            >
-              <Camera size={12} className="text-gray-500" />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-gray-800">
-              {user.firstName} {user.lastName}
-            </h2>
-            <p className="text-sm text-gray-500">{user.role}</p>
-            <p className="text-sm text-gray-500">{user.university}</p>
+      {error && (
+        <div className="bg-red-50 text-red-600 p-3.5 rounded-xl mb-4 text-sm font-medium border border-red-100">
+          {error}
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/60 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <div className="relative flex-shrink-0">
+              <img
+                src={profile?.profile_picture_url || defaultAvatar}
+                className="w-20 h-20 rounded-full object-cover border-2 border-gray-200/60 shadow-sm"
+              />
+              <button
+                onClick={() => fileRef.current.click()}
+                className="absolute bottom-0 right-0 w-7 h-7 bg-white border border-gray-200/60 rounded-full flex items-center justify-center shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200"
+              >
+                <Camera size={12} className="text-gray-500" />
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">{userName}</h2>
+              <p className="text-sm text-gray-500">{profile?.university}</p>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-[11px] font-semibold text-[#465182] bg-[#465182]/[0.06] px-2.5 py-1 rounded-lg border border-[#465182]/8">
+                  Admin
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-        <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:shadow-md transition">
-          <Pencil size={13} /> Edit
-        </button>
       </div>
 
-      {/* Personal Information */}
-      <SectionCard title="Personal Information">
-        <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-          {fields.map(({ label, key, readonly }) => (
+      <SectionCard title="Personal Information" icon={MdPerson}>
+        <div className="grid grid-cols-2 gap-x-12 gap-y-5">
+          {fields.map(({ label, key, value, readonly }) => (
             <div key={key}>
               <div className="flex items-center gap-1.5 mb-1">
                 <p className="text-xs text-gray-400 font-medium">{label}</p>
-                {!readonly && (
-                  <button onClick={() => handleEdit(key, user[key])}>
+                {!readonly && value !== undefined && (
+                  <button onClick={() => handleEdit(key, value || "")}>
                     <Pencil
                       size={11}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-gray-300 hover:text-[#465182] transition-colors"
                     />
                   </button>
                 )}
@@ -189,24 +281,29 @@ const Account = () => {
                     autoFocus
                     value={tempValue}
                     onChange={(e) => setTempValue(e.target.value)}
-                    className="text-sm border border-blue-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-100"
+                    className="text-sm border border-[#465182]/25 bg-white rounded-lg px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-[#465182]/5 transition-all duration-200 w-full"
                   />
                   <button
                     onClick={() => handleSave(key)}
-                    className="text-xs text-blue-600 font-semibold hover:underline"
+                    className="text-xs text-[#465182] font-bold hover:underline flex-shrink-0"
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setEditField(null)}
-                    className="text-xs text-gray-400 hover:underline"
+                    className="text-xs text-gray-400 hover:underline flex-shrink-0"
                   >
                     Cancel
                   </button>
                 </div>
               ) : (
                 <p className="text-sm font-semibold text-gray-800">
-                  {user[key]}
+                  {value || "N/A"}
+                  {readonly && (
+                    <span className="ml-2 text-[10px] font-medium text-gray-300 bg-gray-100 px-1.5 py-0.5 rounded">
+                      Read-only
+                    </span>
+                  )}
                 </p>
               )}
             </div>
@@ -214,30 +311,41 @@ const Account = () => {
         </div>
       </SectionCard>
 
-      {/* General Settings */}
-      <SectionCard title="General Settings">
-        <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+      <SectionCard title="General Settings" icon={MdSettings}>
+        <div className="grid grid-cols-2 gap-x-12 gap-y-5">
           <div>
-            <p className="text-xs text-gray-400 font-medium mb-1">Language</p>
+            <p className="text-xs text-gray-400 font-medium mb-1.5">Language</p>
             <select
-              value={user.language}
-              onChange={(e) =>
-                setUser((prev) => ({ ...prev, language: e.target.value }))
-              }
-              className="text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 w-full"
+              value={profile?.language || "English"}
+              onChange={async (e) => {
+                const val = e.target.value;
+                setProfile((prev) => ({ ...prev, language: val }));
+                try {
+                  await adminApi.updateProfile({ language: val });
+                } catch (err) {
+                  console.error("Failed to update language:", err);
+                }
+              }}
+              className="w-full text-sm border border-gray-200/70 bg-[#FAFBFC] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#465182]/25 focus:bg-white focus:ring-2 focus:ring-[#465182]/5 transition-all duration-200 appearance-none"
             >
               <option>English</option>
               <option>Arabic</option>
             </select>
           </div>
           <div>
-            <p className="text-xs text-gray-400 font-medium mb-1">Timezone</p>
+            <p className="text-xs text-gray-400 font-medium mb-1.5">Timezone</p>
             <select
-              value={user.timezone}
-              onChange={(e) =>
-                setUser((prev) => ({ ...prev, timezone: e.target.value }))
-              }
-              className="text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 w-full"
+              value={profile?.timezone || "Africa/Cairo"}
+              onChange={async (e) => {
+                const val = e.target.value;
+                setProfile((prev) => ({ ...prev, timezone: val }));
+                try {
+                  await adminApi.updateProfile({ timezone: val });
+                } catch (err) {
+                  console.error("Failed to update timezone:", err);
+                }
+              }}
+              className="w-full text-sm border border-gray-200/70 bg-[#FAFBFC] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#465182]/25 focus:bg-white focus:ring-2 focus:ring-[#465182]/5 transition-all duration-200 appearance-none"
             >
               <option value="Africa/Cairo">Cairo (GMT+2)</option>
               <option value="Europe/London">London (GMT+0)</option>
@@ -248,18 +356,24 @@ const Account = () => {
         </div>
       </SectionCard>
 
-      <SectionCard title="System Overview">
-        <div className="inline-grid grid-cols-[auto_auto] gap-x-10 gap-y-4">
-          {stats.map(({ label, value }) => (
-            <div key={label} className="contents">
-              <p className="text-sm text-gray-500">{label}</p>
-              <p className="text-sm font-bold text-gray-800">{value}</p>
+      <SectionCard title="System Overview" icon={MdDashboard}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className={`${stat.bg} ${stat.border} border rounded-xl p-4 text-center`}
+            >
+              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+              <p className="text-[11px] text-gray-500 font-medium mt-1">
+                {stat.label}
+              </p>
             </div>
           ))}
         </div>
       </SectionCard>
 
-      <SectionCard title="Change Password">
+      {/* Change  */}
+      <SectionCard title="Change Password" icon={MdLock}>
         <div className="grid grid-cols-2 gap-x-12 gap-y-5">
           <PasswordInput
             label="Current Password"
@@ -269,7 +383,7 @@ const Account = () => {
             passwords={passwords}
             setPasswords={setPasswords}
           />
-          <div />
+          <div className="hidden md:block" />
           <PasswordInput
             label="New Password"
             field="new"
@@ -287,21 +401,33 @@ const Account = () => {
             setPasswords={setPasswords}
           />
         </div>
-        {passError && <p className="text-xs text-red-500 mt-3">{passError}</p>}
+        {passError && (
+          <p className="text-xs text-red-500 font-medium mt-3 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
+            {passError}
+          </p>
+        )}
         {passSuccess && (
-          <p className="text-xs text-emerald-500 mt-3">{passSuccess}</p>
+          <p className="text-xs text-emerald-600 font-medium mt-3 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100">
+            {passSuccess}
+          </p>
         )}
         <button
           onClick={handleChangePassword}
-          className="mt-4 px-5 py-2 rounded-xl bg-[#1B2036] text-white text-sm font-semibold hover:opacity-90 transition"
+          className="mt-4 px-6 py-2.5 rounded-xl bg-[#465182] text-white text-sm font-semibold hover:bg-[#3a4570] transition-all duration-200 shadow-md shadow-[#465182]/15 active:scale-[0.995]"
         >
           Update Password
         </button>
       </SectionCard>
 
-      <button className="mt-2 mb-8 px-5 py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 transition">
-        Delete Account
-      </button>
+      <div className="mt-2 mb-8 bg-white rounded-2xl p-6 shadow-sm border border-red-100/60">
+        <p className="text-xs text-gray-400 mb-4">
+          Once you delete your account, there is no going back. This will
+          permanently remove all data.
+        </p>
+        <button className="px-5 py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 transition-colors duration-200">
+          Delete Account
+        </button>
+      </div>
     </div>
   );
 };

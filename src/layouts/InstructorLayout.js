@@ -8,7 +8,7 @@ const InstructorLayout = () => {
       <InstructorSidebar />
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Topbar />
-        <main className="flex-1 overflow-y-auto p-4">
+        <main className="flex-1 overflow-y-auto bg-[#F8F9FB] p-4">
           <Outlet />
         </main>
       </div>

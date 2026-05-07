@@ -9,7 +9,7 @@ const StudentLayout = () => {
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Topbar role="student" />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4">
           <Outlet />
         </main>
       </div>

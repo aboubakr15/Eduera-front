@@ -58,7 +58,7 @@ const UploadCenter = () => {
   const slideTitle = uploadedFile?.name.split(".")[0];
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col h-full overflow-y-auto p-8">
+    <div className="flex flex-col h-full overflow-y-auto p-3">
       <div className=" mx-auto w-full">
         <div className="flex items-center gap-4 mb-8">
           <button
