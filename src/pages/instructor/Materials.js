@@ -70,6 +70,32 @@ const InstructorMaterials = () => {
       setSelectedFile(null);
     }
   };
+  const handleViewFile = async (fullUrl) => {
+    try {
+      const urlObj = new URL(fullUrl);
+      const relativePath = urlObj.pathname;
+
+      const token =
+        localStorage.getItem("access") || localStorage.getItem("token");
+
+      const response = await fetch(relativePath, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Network response was not ok");
+
+      const blob = await response.blob();
+      const fileUrl = URL.createObjectURL(blob);
+      window.open(fileUrl, "_blank");
+
+      setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+    } catch (err) {
+      console.error("Failed to open file:", err);
+      alert("Failed to open the file.");
+    }
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -290,14 +316,12 @@ const InstructorMaterials = () => {
                   </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
-                      <a
-                        href={m.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => handleViewFile(m.file_download_url)}
                         className="flex items-center mr-10 text-sm text-[#D67A1E] font-semibold hover:underline"
                       >
                         View File
-                      </a>
+                      </button>
                       <button
                         onClick={() => openDeleteModal(m)}
                         className=" text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -314,7 +338,6 @@ const InstructorMaterials = () => {
         </table>
       </div>
 
-      {/* ✅ Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-gray-100 my-8 text-center">

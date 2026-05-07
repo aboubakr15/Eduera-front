@@ -63,6 +63,27 @@ const studentNotifications = [
   },
 ];
 
+const adminNotifications = [
+  {
+    id: 1,
+    text: "New instructor registration request",
+    time: "30 min ago",
+    isRead: false,
+  },
+  {
+    id: 2,
+    text: "System backup completed successfully",
+    time: "2 hours ago",
+    isRead: false,
+  },
+  {
+    id: 3,
+    text: "New course 'AI Basics' pending approval",
+    time: "5 hours ago",
+    isRead: true,
+  },
+];
+
 const Topbar = ({ user, role = "instructor" }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -83,14 +104,21 @@ const Topbar = ({ user, role = "instructor" }) => {
   }
 
   const notifications =
-    role === "student" ? studentNotifications : instructorNotifications;
+    role === "student"
+      ? studentNotifications
+      : role === "admin"
+        ? adminNotifications
+        : instructorNotifications;
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const userName = user?.name || user?.email?.split("@")[0] || "User";
   const userRole =
     role === "student"
       ? "Student"
-      : user?.primary_role || user?.role || "Instructor";
+      : role === "admin"
+        ? "Admin"
+        : user?.primary_role || user?.role || "Instructor";
 
   return (
     <div className="h-14 bg-gray-100 flex items-center justify-between px-6 border-b border-gray-100">

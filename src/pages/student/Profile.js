@@ -81,8 +81,8 @@ const StudentProfile = () => {
       try {
         const response = await studentApi.getProfile();
         setProfile(response.data);
+        console.log("Profile Data:", response.data);
       } catch (err) {
-        console.error("Failed to fetch profile:", err);
         setError("Failed to load profile");
       } finally {
         setLoading(false);
@@ -238,7 +238,7 @@ const StudentProfile = () => {
               {
                 label: "Academic Year",
                 key: "academic_year",
-                value: profile?.academic_year,
+                value: profile?.student_current_level,
                 readonly: true,
               },
               {

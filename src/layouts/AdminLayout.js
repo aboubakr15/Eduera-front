@@ -7,7 +7,7 @@ const AdminLayout = () => {
     <div className={`flex h-screen overflow-hidden`}>
       <AdminSidebar />
       <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white rounded-bl-3xl">
-        <Topbar />
+        <Topbar role="admin" />
         <main className="flex-1 overflow-y-auto  p-4">
           <Outlet />
         </main>

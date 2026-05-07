@@ -111,7 +111,10 @@ const AdminSidebar = () => {
                   {user?.email?.split("@")[0] || "Admin"}
                 </p>
                 <p className="text-xs text-gray-400">
-                  {user?.primary_role || "Admin"}
+                  {user?.primary_role
+                    ? user.primary_role.charAt(0).toUpperCase() +
+                      user.primary_role.slice(1).toLowerCase()
+                    : "Admin"}
                 </p>
               </div>
               <FaChevronDown

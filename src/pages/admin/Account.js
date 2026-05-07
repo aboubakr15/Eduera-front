@@ -356,22 +356,6 @@ const Account = () => {
         </div>
       </SectionCard>
 
-      <SectionCard title="System Overview" icon={MdDashboard}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className={`${stat.bg} ${stat.border} border rounded-xl p-4 text-center`}
-            >
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-[11px] text-gray-500 font-medium mt-1">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-
       {/* Change  */}
       <SectionCard title="Change Password" icon={MdLock}>
         <div className="grid grid-cols-2 gap-x-12 gap-y-5">

@@ -136,7 +136,10 @@ const StudentSidebar = () => {
                   {user?.email?.split("@")[0] || "Student"}
                 </p>
                 <p className="text-xs text-gray-400">
-                  {user?.primary_role || "Student"}
+                  {user?.primary_role
+                    ? user.primary_role.charAt(0).toUpperCase() +
+                      user.primary_role.slice(1).toLowerCase()
+                    : "Student"}
                 </p>
               </div>
               <FaChevronDown
