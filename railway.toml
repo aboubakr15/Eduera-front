@@ -3,5 +3,7 @@
   buildCommand = "CI=false npm run build"
 
 [deploy]
-  strategy = "static"
-  staticPublishDir = "build"
+  startCommand = "npx serve -s build -l $PORT"
+
+[build.env]
+  CI = "false"
