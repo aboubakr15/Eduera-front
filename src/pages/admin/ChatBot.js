@@ -21,29 +21,24 @@ import {
   FaTrash,
   FaFile,
   FaImage,
+  FaDownload,
 } from "react-icons/fa";
 import { MdOutlineSlideshow } from "react-icons/md";
 import botImg from "../../assets/images/botImg.png";
-const dummyChats = [
-  { id: 1, title: "How does backpropagation work?", starred: false },
-  { id: 2, title: "Explain overfitting vs underfitting", starred: false },
-  { id: 3, title: "What is a transformer model?", starred: false },
-  { id: 4, title: "Neural network architectures", starred: false },
-];
+import { adminApi } from "../../api/adminApi";
+import { BACKEND_URL } from "../../api/axios";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-const courses = [
-  "Introduction to Programming",
-  "Data Structures & Algorithms",
-  "Object Oriented Programming",
-];
-
-// Quiz Generator
 const QuizGenerator = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [numQ, setNumQ] = useState("5");
   const [difficulty, setDifficulty] = useState("Medium");
   const [generated, setGenerated] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [quizData, setQuizData] = useState(null);
+  const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleFileDrop = (e) => {
@@ -53,6 +48,8 @@ const QuizGenerator = () => {
     if (file) {
       setUploadedFile(file);
       setGenerated(false);
+      setQuizData(null);
+      setError(null);
     }
   };
 
@@ -61,6 +58,63 @@ const QuizGenerator = () => {
     if (file) {
       setUploadedFile(file);
       setGenerated(false);
+      setQuizData(null);
+      setError(null);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!uploadedFile) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const mockQuiz = {
+        title: `Quiz: ${uploadedFile.name}`,
+        questions: [
+          {
+            id: 1,
+            question: "What is the main topic of the uploaded material?",
+            options: ["Option A", "Option B", "Option C", "Option D"],
+            correct_answer: 0,
+            explanation: "This is the correct answer based on the material."
+          },
+          {
+            id: 2,
+            question: "Which of the following best describes the key concept?",
+            options: ["Concept X", "Concept Y", "Concept Z", "Concept W"],
+            correct_answer: 2,
+            explanation: "The material clearly states that Concept Z is the key idea."
+          },
+          {
+            id: 3,
+            question: "What is the recommended approach according to the content?",
+            options: ["Approach A", "Approach B", "Approach C", "Approach D"],
+            correct_answer: 1,
+            explanation: "Approach B is recommended in the uploaded material."
+          },
+          {
+            id: 4,
+            question: "Which statement is true based on the uploaded file?",
+            options: ["Statement 1", "Statement 2", "Statement 3", "Statement 4"],
+            correct_answer: 3,
+            explanation: "Statement 4 is verified by the content."
+          },
+          {
+            id: 5,
+            question: "What can be inferred from the material?",
+            options: ["Inference A", "Inference B", "Inference C", "Inference D"],
+            correct_answer: 0,
+            explanation: "The material supports Inference A."
+          }
+        ]
+      };
+      setQuizData(mockQuiz);
+      setGenerated(true);
+    } catch (err) {
+      setError("Failed to generate quiz. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -134,6 +188,8 @@ const QuizGenerator = () => {
                   onClick={() => {
                     setUploadedFile(null);
                     setGenerated(false);
+                    setQuizData(null);
+                    setError(null);
                   }}
                   className="w-7 h-7 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors flex-shrink-0"
                 >
@@ -174,22 +230,29 @@ const QuizGenerator = () => {
           </div>
 
           <button
-            onClick={() => uploadedFile && setGenerated(true)}
+            onClick={handleGenerate}
+            disabled={!uploadedFile || loading}
             className={`w-full py-3 rounded-xl text-white text-sm font-semibold transition-all ${
-              uploadedFile
-                ? "bg-[#D67A1E] hover:bg-[#D67A1E] shadow-sm"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              !uploadedFile || loading
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-[#D67A1E] hover:bg-[#D67A1E] shadow-sm"
             }`}
           >
-            Generate Quiz
+            {loading ? "Generating..." : "Generate Quiz"}
           </button>
         </div>
 
-        {generated && (
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
+        {generated && quizData && (
           <div className="mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">
-                {uploadedFile?.name.split(".")[0]}
+                {quizData.title || uploadedFile?.name.split(".")[0]}
               </h3>
               <span
                 className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -204,266 +267,23 @@ const QuizGenerator = () => {
               </span>
             </div>
             <div className="space-y-4">
-              {Array.from({ length: parseInt(numQ) || 3 }, (_, i) => (
+              {(quizData.questions || []).map((q, i) => (
                 <div key={i} className="p-4 bg-gray-50 rounded-xl">
                   <p className="text-sm font-semibold text-gray-700 mb-3">
-                    Q{i + 1}. Sample question from your file?
+                    Q{i + 1}. {q.question || q.text || q.content}
                   </p>
                   <div className="space-y-2">
-                    {["A", "B", "C", "D"].map((opt) => (
+                    {(q.options || q.choices || []).map((opt, j) => (
                       <label
-                        key={opt}
+                        key={j}
                         className="flex items-center gap-2.5 text-sm text-gray-500 cursor-pointer hover:text-gray-700 group"
                       >
                         <span className="w-6 h-6 rounded-full border-2 border-gray-200 group-hover:border-gray-300 flex items-center justify-center text-xs font-semibold transition-colors flex-shrink-0">
-                          {opt}
+                          {String.fromCharCode(65 + j)}
                         </span>
-                        Sample answer option {opt}
+                        {typeof opt === "string" ? opt : opt.text || opt.content}
                       </label>
                     ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Presentation Generator
-const PresentationGenerator = () => {
-  const [source, setSource] = useState("file");
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [textInput, setTextInput] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
-  const [numSlides, setNumSlides] = useState("8");
-  const [style, setStyle] = useState("Academic");
-  const [generated, setGenerated] = useState(false);
-  const fileInputRef = useRef(null);
-
-  const canGenerate =
-    source === "file" ? !!uploadedFile : textInput.trim().length > 0;
-
-  const handleFileDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      setUploadedFile(file);
-      setGenerated(false);
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setUploadedFile(file);
-      setGenerated(false);
-    }
-  };
-
-  const slideTitle =
-    source === "file"
-      ? uploadedFile?.name.split(".")[0]
-      : textInput.slice(0, 40) + (textInput.length > 40 ? "..." : "");
-
-  return (
-    <div className="flex flex-col h-full overflow-y-auto p-8 bg-gray-50">
-      <div className="max-w-5xl mx-auto w-full">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-            <MdOutlineSlideshow size={20} className="text-[#D67A1E]" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">
-              Presentation Generator
-            </h2>
-            <p className="text-xs text-gray-400">
-              Generate a presentation from a file or text
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-          <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
-            {[
-              { id: "file", label: "From File" },
-              { id: "text", label: "From Text" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setSource(tab.id);
-                  setGenerated(false);
-                }}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  source === tab.id
-                    ? "bg-white text-[#D67A1E] shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {source === "file" && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Upload File
-              </label>
-              {!uploadedFile ? (
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleFileDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-                    isDragging
-                      ? "border-orange-400 bg-orange-50"
-                      : "border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50/40"
-                  }`}
-                >
-                  <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <FaFile size={20} className="text-[#D67A1E]" />
-                  </div>
-                  <p className="text-sm font-semibold text-gray-600 mb-1">
-                    Drop your file here
-                  </p>
-                  <p className="text-xs text-gray-400 mb-3">
-                    or click to browse
-                  </p>
-                  <span className="text-xs text-[#D67A1E] bg-orange-50 border border-orange-100 px-3 py-1 rounded-full">
-                    PDF, DOC, DOCX, TXT
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 bg-orange-50 border border-orange-100 rounded-xl p-4">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <FaFile size={16} className="text-[#D67A1E]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-700 truncate">
-                      {uploadedFile.name}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {(uploadedFile.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setUploadedFile(null);
-                      setGenerated(false);
-                    }}
-                    className="w-7 h-7 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors flex-shrink-0"
-                  >
-                    <FaTimes size={11} />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {source === "text" && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Your Text
-              </label>
-              <textarea
-                placeholder="Paste or type your content here... e.g. lecture notes, article, summary"
-                value={textInput}
-                onChange={(e) => {
-                  setTextInput(e.target.value);
-                  setGenerated(false);
-                }}
-                rows={6}
-                className="w-full border border-gray-100 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-orange-300 focus:bg-white transition-colors resize-none"
-              />
-              <p className="text-xs text-gray-400 mt-1 text-right">
-                {textInput.length} characters
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                Slides
-              </label>
-              <input
-                type="number"
-                min="3"
-                max="20"
-                value={numSlides}
-                onChange={(e) => setNumSlides(e.target.value)}
-                className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-orange-300 focus:bg-white transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                Style
-              </label>
-              <select
-                value={style}
-                onChange={(e) => setStyle(e.target.value)}
-                className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-orange-300 focus:bg-white transition-colors"
-              >
-                {["Academic", "Professional", "Creative"].map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <button
-            onClick={() => canGenerate && setGenerated(true)}
-            className={`w-full py-3 rounded-xl text-white text-sm font-semibold transition-all ${
-              canGenerate
-                ? "bg-[#D67A1E] hover:bg-[#af6b26] shadow-sm"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
-          >
-            Generate Presentation
-          </button>
-        </div>
-
-        {generated && (
-          <div className="mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h3 className="font-bold text-gray-800 mb-4">
-              Slides: {slideTitle}
-            </h3>
-            <div className="space-y-3">
-              {Array.from({ length: parseInt(numSlides) || 5 }, (_, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl"
-                >
-                  <span className="w-7 h-7 rounded-lg bg-orange-100 text-[#D67A1E] flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    {i + 1}
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700">
-                      {i === 0
-                        ? "Introduction & Overview"
-                        : i === (parseInt(numSlides) || 5) - 1
-                          ? "Conclusion & Summary"
-                          : `Key concept from your ${source === "file" ? "file" : "text"}`}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Bullet points and visual suggestions
-                    </p>
                   </div>
                 </div>
               ))}
@@ -480,12 +300,7 @@ const Toolbar = ({
   onAttach,
   deepThinking,
   setDeepThinking,
-  selectedCourse,
-  setSelectedCourse,
-  showCourseMenu,
-  setShowCourseMenu,
   attachedFiles,
-  onRemoveFile,
 }) => (
   <div className="flex items-center gap-2 flex-wrap">
     <button
@@ -516,49 +331,6 @@ const Toolbar = ({
       <FaBrain size={12} />
       Deep Thinking
     </button>
-
-    {/* Choose Course */}
-    <div className="relative">
-      <button
-        onClick={() => setShowCourseMenu(!showCourseMenu)}
-        className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-      >
-        <FaBookOpen size={12} />
-        {selectedCourse || "Choose Course"}
-        <FaChevronDown size={10} className="ml-1" />
-      </button>
-      {showCourseMenu && (
-        <div className="absolute bottom-full mb-2 left-0 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-20 w-60">
-          {courses.map((course) => (
-            <button
-              key={course}
-              onClick={() => {
-                setSelectedCourse(course);
-                setShowCourseMenu(false);
-              }}
-              className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                selectedCourse === course
-                  ? "bg-orange-50 text-[#D67A1E] font-semibold"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              {course}
-            </button>
-          ))}
-          {selectedCourse && (
-            <button
-              onClick={() => {
-                setSelectedCourse("");
-                setShowCourseMenu(false);
-              }}
-              className="w-full text-left px-4 py-2.5 text-xs text-gray-400 hover:bg-gray-50 border-t border-gray-100"
-            >
-              Clear selection
-            </button>
-          )}
-        </div>
-      )}
-    </div>
   </div>
 );
 
@@ -620,8 +392,6 @@ const FilesPreviewStrip = ({ files, onRemove }) => {
 const WelcomeScreen = ({ onSend }) => {
   const [input, setInput] = useState("");
   const [deepThinking, setDeepThinking] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState("");
-  const [showCourseMenu, setShowCourseMenu] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -646,8 +416,7 @@ const WelcomeScreen = ({ onSend }) => {
 
   return (
     <div
-      className="flex flex-col h-full items-center bg-gray-50  justify-center"
-      onClick={() => setShowCourseMenu(false)}
+      className="flex flex-col h-full items-center bg-gray-50 justify-center"
     >
       <div className="w-full max-w-2xl flex flex-col items-center">
         <div className="w-32 h-32 mb-4 rounded-full bg-gray-50 overflow-hidden ">
@@ -689,12 +458,7 @@ const WelcomeScreen = ({ onSend }) => {
               onAttach={() => fileInputRef.current?.click()}
               deepThinking={deepThinking}
               setDeepThinking={setDeepThinking}
-              selectedCourse={selectedCourse}
-              setSelectedCourse={setSelectedCourse}
-              showCourseMenu={showCourseMenu}
-              setShowCourseMenu={setShowCourseMenu}
               attachedFiles={attachedFiles}
-              onRemoveFile={removeFile}
             />
           </div>
           {attachedFiles.length >= 10 && (
@@ -702,6 +466,22 @@ const WelcomeScreen = ({ onSend }) => {
               Maximum 10 files reached
             </p>
           )}
+        </div>
+        <div className="flex flex-wrap gap-2 mt-4 justify-center">
+          <button
+            onClick={() => { onSend("Create a presentation covering the key topics from my course materials"); setInput(""); }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 hover:border-[#D67A1E]/20 hover:text-[#D67A1E] hover:bg-[#D67A1E]/[0.04] transition-all duration-200 shadow-sm"
+          >
+            <MdOutlineSlideshow size={13} />
+            Create a presentation
+          </button>
+          <button
+            onClick={() => { onSend("Help me create slides about a topic I'll describe"); setInput(""); }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 hover:border-[#465182]/20 hover:text-[#465182] hover:bg-[#465182]/[0.04] transition-all duration-200 shadow-sm"
+          >
+            <MdOutlineSlideshow size={13} />
+            Make slides
+          </button>
         </div>
         <input
           ref={fileInputRef}
@@ -717,14 +497,32 @@ const WelcomeScreen = ({ onSend }) => {
 };
 
 // Chat View
-const ChatView = ({ messages, onSend }) => {
+const ChatView = ({ messages, onSend, selectedCourse }) => {
   const [input, setInput] = useState("");
   const [deepThinking, setDeepThinking] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState("");
-  const [showCourseMenu, setShowCourseMenu] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [refiningId, setRefiningId] = useState(null);
+  const [refineText, setRefineText] = useState("");
+
+  const isPresentationBlueprint = (text) => /Slide\s+\d+:/i.test(text) && text.length > 100;
+
+  const handleApprove = () => {
+    onSend("Approved! Generate the final presentation file.", selectedCourse);
+  };
+
+  const handleStartRefine = (msgId) => {
+    setRefiningId(msgId);
+    setRefineText("");
+  };
+
+  const handleSubmitRefine = (msgId) => {
+    if (!refineText.trim()) return;
+    onSend(refineText.trim(), selectedCourse);
+    setRefiningId(null);
+    setRefineText("");
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -752,7 +550,6 @@ const ChatView = ({ messages, onSend }) => {
   return (
     <div
       className="flex flex-col h-full bg-gray-50"
-      onClick={() => setShowCourseMenu(false)}
     >
       <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
         {messages.map((msg) => (
@@ -782,12 +579,98 @@ const ChatView = ({ messages, onSend }) => {
               <div
                 className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === "assistant"
-                    ? "bg-white border border-gray-100 text-gray-700 shadow-sm rounded-tl-sm"
-                    : "bg-[#465182] text-white rounded-tr-sm"
+                    ? "bg-white border border-gray-100 text-gray-700 shadow-sm rounded-tl-sm markdown-content"
+                    : "bg-[#465182] text-white rounded-tr-sm markdown-content-dark"
                 }`}
               >
-                {msg.text}
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({node, className, children, ...props}) {
+                      const match = /language-(\w+)/.exec(className || "");
+                      const isInline = !match && !className;
+                      if (isInline) {
+                        return <code className="bg-gray-100 text-pink-600 px-1 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>;
+                      }
+                      return (
+                        <pre className="bg-gray-900 text-gray-100 rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono">
+                          <code className={className} {...props}>{children}</code>
+                        </pre>
+                      );
+                    },
+                    a({node, children, ...props}) {
+                      return <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                    },
+                    ul({node, children, ...props}) {
+                      return <ul className="list-disc pl-5 my-1 space-y-0.5" {...props}>{children}</ul>;
+                    },
+                    ol({node, children, ...props}) {
+                      return <ol className="list-decimal pl-5 my-1 space-y-0.5" {...props}>{children}</ol>;
+                    },
+                    table({node, children, ...props}) {
+                      return <div className="overflow-x-auto my-2"><table className="min-w-full border-collapse border border-gray-300 text-xs" {...props}>{children}</table></div>;
+                    },
+                    th({node, children, ...props}) {
+                      return <th className="border border-gray-300 px-2 py-1 bg-gray-50 font-semibold" {...props}>{children}</th>;
+                    },
+                    td({node, children, ...props}) {
+                      return <td className="border border-gray-300 px-2 py-1" {...props}>{children}</td>;
+                    },
+                    h1({node, children, ...props}) {
+                      return <h1 className="text-base font-bold mt-3 mb-1" {...props}>{children}</h1>;
+                    },
+                    h2({node, children, ...props}) {
+                      return <h2 className="text-sm font-bold mt-2 mb-1" {...props}>{children}</h2>;
+                    },
+                    h3({node, children, ...props}) {
+                      return <h3 className="text-sm font-semibold mt-2 mb-1" {...props}>{children}</h3>;
+                    },
+                    p({node, children, ...props}) {
+                      return <p className="mb-1 last:mb-0" {...props}>{children}</p>;
+                    },
+                  }}
+                >
+                  {msg.text}
+                </ReactMarkdown>
               </div>
+              {msg.role === "assistant" && isPresentationBlueprint(msg.text) && !msg.presentationPath && (
+                <div className="px-1 space-y-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleApprove}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                    >
+                      Approve & Generate
+                    </button>
+                    <button
+                      onClick={() => handleStartRefine(msg.id)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-[#D67A1E] bg-[#D67A1E]/[0.06] border border-[#D67A1E]/10 rounded-lg hover:bg-[#D67A1E]/[0.1] transition-colors"
+                    >
+                      Refine
+                    </button>
+                  </div>
+                  {refiningId === msg.id && (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={refineText}
+                        onChange={(e) => setRefineText(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSubmitRefine(msg.id)}
+                        placeholder="Describe what to change..."
+                        className="flex-1 text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-[#D67A1E]/30"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => handleSubmitRefine(msg.id)}
+                        disabled={!refineText.trim()}
+                        className="px-2.5 py-1.5 text-xs font-semibold text-white bg-[#465182] rounded-lg hover:bg-[#3a4570] transition-colors disabled:opacity-50"
+                      >
+                        Send
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -818,12 +701,7 @@ const ChatView = ({ messages, onSend }) => {
               onAttach={() => fileInputRef.current?.click()}
               deepThinking={deepThinking}
               setDeepThinking={setDeepThinking}
-              selectedCourse={selectedCourse}
-              setSelectedCourse={setSelectedCourse}
-              showCourseMenu={showCourseMenu}
-              setShowCourseMenu={setShowCourseMenu}
               attachedFiles={attachedFiles}
-              onRemoveFile={removeFile}
             />
           </div>
           {attachedFiles.length >= 10 && (
@@ -848,95 +726,153 @@ const ChatView = ({ messages, onSend }) => {
 // Main Page
 const ChatBot = () => {
   const [activeView, setActiveView] = useState("chat");
-  const [chats, setChats] = useState(dummyChats);
+  const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
-  const [allMessages, setAllMessages] = useState({
-    1: [
-      {
-        id: 1,
-        role: "assistant",
-        text: "Hi! Ask me anything about backpropagation.",
-      },
-    ],
-    2: [
-      {
-        id: 1,
-        role: "assistant",
-        text: "Hi! Let's talk about overfitting vs underfitting.",
-      },
-    ],
-    3: [
-      {
-        id: 1,
-        role: "assistant",
-        text: "Hi! What would you like to know about transformer models?",
-      },
-    ],
-    4: [
-      {
-        id: 1,
-        role: "assistant",
-        text: "Hi! Let's explore neural network architectures.",
-      },
-    ],
-  });
+  const [allMessages, setAllMessages] = useState({});
   const [search, setSearch] = useState("");
   const [hoveredChat, setHoveredChat] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+  const [sending, setSending] = useState(false);
 
   const messages = activeChatId ? allMessages[activeChatId] || [] : [];
 
-  const handleNewChat = () => {
-    const newId = Date.now();
-    setChats((prev) => [
-      { id: newId, title: "New conversation", starred: false },
-      ...prev,
-    ]);
-    setAllMessages((prev) => ({
-      ...prev,
-      [newId]: [
-        { id: 1, role: "assistant", text: "Hi! How can I help you today?" },
-      ],
-    }));
-    setActiveChatId(newId);
-    setActiveView("chat");
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const response = await adminApi.getConversations();
+        setChats(response.data || []);
+      } catch (err) {
+        console.error("Failed to fetch conversations:", err);
+      }
+    };
+    fetchConversations();
+  }, []);
+
+  const loadMessages = async (convId) => {
+    if (allMessages[convId] && allMessages[convId].length > 0) return;
+    try {
+      const response = await adminApi.getConversationMessages(convId);
+      const formatted = (response.data || []).map((m) => ({
+        id: m.id,
+        role: m.role === "USER" ? "user" : "assistant",
+        text: m.content,
+        sources: m.sources_used || [],
+      }));
+      setAllMessages((prev) => ({ ...prev, [convId]: formatted }));
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+    }
   };
 
-  const handleWelcomeSend = (text, files) => {
-    const newId = Date.now();
-    const userMsg = { id: Date.now(), role: "user", text, files };
-    const botMsg = {
-      id: Date.now() + 1,
-      role: "assistant",
-      text: `Ai Replay`,
-    };
-    setChats((prev) => [
-      {
-        id: newId,
+  const handleNewChat = async () => {
+    try {
+      const response = await adminApi.createConversation({ title: "New conversation" });
+      const conv = response.data;
+      const newId = conv.id;
+      setChats((prev) => [
+        { id: newId, title: "New conversation", starred: false },
+        ...prev,
+      ]);
+      setAllMessages((prev) => ({
+        ...prev,
+        [newId]: [],
+      }));
+      setActiveChatId(newId);
+      setActiveView("chat");
+    } catch (err) {
+      console.error("Failed to create conversation:", err);
+    }
+  };
+
+  const sendToApi = async (text, chatId) => {
+    setSending(true);
+    try {
+      const chat = chats.find((c) => c.id === chatId);
+      const isNewChat = chat && chat.title === "New conversation";
+      const payload = { content: text };
+      if (!isNewChat) payload.conversation_id = chatId;
+
+      const response = await adminApi.sendChatMessage({ content: text, conversation_id: isNewChat ? undefined : chatId });
+      const data = response.data;
+      const conversationId = data.conversation_id;
+      const aiContent = data.ai_message?.content || data.answer || data.message || JSON.stringify(data);
+      const sources = data.ai_message?.sources_used || [];
+      const pptxMatch = aiContent.match(/([\w\/\-_.]+\.pptx)/);
+      const presentationPath = data.presentation_path || (pptxMatch ? (pptxMatch[1].startsWith("http") ? pptxMatch[1] : `${BACKEND_URL}/${pptxMatch[1].replace(/^\//, "")}`) : null);
+
+      const botMsg = { id: Date.now(), role: "assistant", text: aiContent, sources, presentationPath };
+
+      if (isNewChat && conversationId) {
+        setChats((prev) =>
+          prev.map((c) =>
+            c.id === chatId
+              ? { ...c, id: conversationId, title: text.slice(0, 32) + (text.length > 32 ? "..." : "") }
+              : c,
+          ),
+        );
+        setActiveChatId(conversationId);
+        setAllMessages((prev) => ({
+          ...prev,
+          [conversationId]: [...(prev[chatId] || []), botMsg],
+        }));
+        if (chatId !== conversationId) {
+          setAllMessages((prev) => {
+            const copy = { ...prev };
+            delete copy[chatId];
+            return copy;
+          });
+        }
+      } else {
+        setAllMessages((prev) => ({
+          ...prev,
+          [chatId]: [...(prev[chatId] || []), botMsg],
+        }));
+      }
+    } catch (err) {
+      console.error("AI chat error:", err);
+      const errorMsg = err.response?.data?.detail || err.response?.data?.error || "Sorry, I couldn't process your request.";
+      setAllMessages((prev) => ({
+        ...prev,
+        [chatId]: [...(prev[chatId] || []), { id: Date.now(), role: "assistant", text: errorMsg }],
+      }));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleWelcomeSend = async (text) => {
+    try {
+      const response = await adminApi.createConversation({
         title: text.slice(0, 32) + (text.length > 32 ? "..." : ""),
-        starred: false,
-      },
-      ...prev,
-    ]);
-    setAllMessages((prev) => ({ ...prev, [newId]: [userMsg, botMsg] }));
-    setActiveChatId(newId);
-    setActiveView("chat");
+      });
+      const conv = response.data;
+      const newId = conv.id;
+      const userMsg = { id: Date.now(), role: "user", text };
+
+      setChats((prev) => [
+        { id: newId, title: text.slice(0, 32) + (text.length > 32 ? "..." : ""), starred: false },
+        ...prev,
+      ]);
+      setAllMessages((prev) => ({ ...prev, [newId]: [userMsg] }));
+      setActiveChatId(newId);
+      setActiveView("chat");
+
+      sendToApi(text, newId);
+    } catch (err) {
+      console.error("Failed to create conversation:", err);
+    }
   };
 
-  const handleSend = (text, files) => {
+  const handleSend = (text) => {
     if (!activeChatId) return;
-    const userMsg = { id: Date.now(), role: "user", text, files };
-    const botMsg = {
-      id: Date.now() + 1,
-      role: "assistant",
-      text: `Ai Replay`,
-    };
+    const userMsg = { id: Date.now(), role: "user", text };
+
     setAllMessages((prev) => ({
       ...prev,
-      [activeChatId]: [...(prev[activeChatId] || []), userMsg, botMsg],
+      [activeChatId]: [...(prev[activeChatId] || []), userMsg],
     }));
     setChats((prev) =>
       prev.map((c) =>
@@ -945,13 +881,16 @@ const ChatBot = () => {
           : c,
       ),
     );
+
+    sendToApi(text, activeChatId);
   };
 
-  // Chat actions
-  const handleStar = (id) => {
-    setChats((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, starred: !c.starred } : c)),
-    );
+  const handleSelectChat = (id) => {
+    setActiveChatId(id);
+    loadMessages(id);
+  };
+
+  const handleStar = async (id) => {
     setOpenMenuId(null);
   };
 
@@ -961,25 +900,35 @@ const ChatBot = () => {
     setOpenMenuId(null);
   };
 
-  const submitRename = (id) => {
+  const submitRename = async (id) => {
     if (renameValue.trim()) {
-      setChats((prev) =>
-        prev.map((c) =>
-          c.id === id ? { ...c, title: renameValue.trim() } : c,
-        ),
-      );
+      try {
+        await adminApi.updateConversation(id, { title: renameValue.trim() });
+        setChats((prev) =>
+          prev.map((c) =>
+            c.id === id ? { ...c, title: renameValue.trim() } : c,
+          ),
+        );
+      } catch (err) {
+        console.error("Failed to rename:", err);
+      }
     }
     setRenamingId(null);
   };
 
-  const handleDeleteChat = (id) => {
-    setChats((prev) => prev.filter((c) => c.id !== id));
-    setAllMessages((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-    if (activeChatId === id) setActiveChatId(null);
+  const handleDeleteChat = async (id) => {
+    try {
+      await adminApi.deleteConversation(id);
+      setChats((prev) => prev.filter((c) => c.id !== id));
+      setAllMessages((prev) => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+      if (activeChatId === id) setActiveChatId(null);
+    } catch (err) {
+      console.error("Failed to delete:", err);
+    }
     setOpenMenuId(null);
   };
 
@@ -1035,20 +984,7 @@ const ChatBot = () => {
               <FaChevronRight size={10} className="ml-auto opacity-60" />
             )}
           </button>
-          <button
-            onClick={() => setActiveView("presentation")}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeView === "presentation"
-                ? "bg-gray-100 text-[#D67A1E] ring-1 ring-gray-200"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-50 hover:text-[#D67A1E]"
-            }`}
-          >
-            <MdOutlineSlideshow size={15} />
-            Presentation
-            {activeView === "presentation" && (
-              <FaChevronRight size={10} className="ml-auto opacity-60" />
-            )}
-          </button>
+
         </div>
 
         <div className="mx-4 border-t border-gray-100 mb-2" />
@@ -1169,23 +1105,15 @@ const ChatBot = () => {
           </button>
           <div
             className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-              activeView === "quiz"
-                ? "bg-orange-100"
-                : activeView === "presentation"
-                  ? "bg-orange-100"
-                  : ""
+              activeView === "quiz" ? "bg-orange-100" : ""
             }`}
           >
             {activeView === "quiz" && (
               <FaQuestionCircle size={13} className="text-[#D67A1E]" />
             )}
-            {activeView === "presentation" && (
-              <MdOutlineSlideshow size={15} className="text-[#D67A1E]" />
-            )}
           </div>
           <h1 className="text-base font-bold text-gray-800">
             {activeView === "quiz" && "Quiz Generator"}
-            {activeView === "presentation" && "Presentation Generator"}
           </h1>
         </div>
 
@@ -1197,7 +1125,6 @@ const ChatBot = () => {
             <ChatView messages={messages} onSend={handleSend} />
           )}
           {activeView === "quiz" && <QuizGenerator />}
-          {activeView === "presentation" && <PresentationGenerator />}
         </div>
       </div>
     </div>

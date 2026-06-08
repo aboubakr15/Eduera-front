@@ -1,4 +1,5 @@
 const BASE_URL = "";
+export const BACKEND_URL = "https://backend-copy-production-fef9.up.railway.app";
 
 const api = {
   defaults: {

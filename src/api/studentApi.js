@@ -25,7 +25,22 @@ export const studentApi = {
   
   getChatHistory: () => api.get('/api/student/chat/'),
   sendChatMessage: (data) => api.post('/api/student/chat/', data),
+  getChatMessages: (conversationId) => api.get('/api/student/chat/messages/', { params: { conversation_id: conversationId } }),
   
+  getConversations: () => api.get('/api/student/conversations/'),
+  createConversation: (data) => api.post('/api/student/conversations/', data),
+  getConversationDetails: (id) => api.get(`/api/student/conversations/${id}/`),
+  updateConversation: (id, data) => api.patch(`/api/student/conversations/${id}/`, data),
+  deleteConversation: (id) => api.delete(`/api/student/conversations/${id}/`),
+  
+  getAssignments: () => api.get('/api/student/assignments/'),
+
+  getCourseChat: (courseId) => api.get(`/api/student/courses/${courseId}/chat/`),
+  sendCourseMessage: (courseId, data) => api.post(`/api/student/courses/${courseId}/chat/`, data),
+
+  generateQuiz: (data) => api.post('/api/student/chat/generate-quiz/', data),
+  generatePresentation: (data) => api.post('/api/student/chat/generate-presentation/', data),
+
   getNotifications: () => api.get('/api/student/notifications/'),
   markNotificationRead: (id, data) => api.patch(`/api/student/notifications/${id}/`, data),
 };

@@ -57,4 +57,22 @@
   nav::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.25);
   }
+
+  .markdown-content-dark a {
+    color: #93c5fd !important;
+  }
+  .markdown-content-dark code {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #f9a8d4 !important;
+  }
+  .markdown-content-dark pre {
+    background: #1e293b !important;
+  }
+  .markdown-content-dark pre code {
+    background: transparent !important;
+    color: #e2e8f0 !important;
+  }
+  .markdown-content pre {
+    background: #1e293b !important;
+  }
 }

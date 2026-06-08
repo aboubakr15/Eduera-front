@@ -33,6 +33,24 @@ export const instructorApi = {
   getConversations: () => api.get('/api/professor/chat/'),
   getConversationMessages: (conversationId) => api.get('/api/professor/chat/messages/', { params: { conversation_id: conversationId } }),
   
+  sendChatMessage: (data) => api.post('/api/professor/chat/', data),
+
+  getOwnConversations: () => api.get('/api/professor/conversations/'),
+  createConversation: (data) => api.post('/api/professor/conversations/', data),
+  getConversationDetails: (id) => api.get(`/api/professor/conversations/${id}/`),
+  updateConversation: (id, data) => api.patch(`/api/professor/conversations/${id}/`, data),
+  deleteConversation: (id) => api.delete(`/api/professor/conversations/${id}/`),
+
+  getCourseChat: (courseId) => api.get(`/api/professor/courses/${courseId}/chat/`),
+  sendCourseMessage: (courseId, data) => api.post(`/api/professor/courses/${courseId}/chat/`, data),
+
+  generateQuiz: (data) => api.post('/api/professor/chat/generate-quiz/', data),
+  generatePresentation: (data) => api.post('/api/professor/chat/generate-presentation/', data),
+
+  getProfile: () => api.get('/api/professor/profile/'),
+  updateProfile: (data) => api.patch('/api/professor/profile/', data),
+  changePassword: (data) => api.post('/api/auth/change-password/', data),
+
   getNotifications: () => api.get('/api/professor/notifications/'),
   markNotificationRead: (id, data) => api.patch(`/api/professor/notifications/${id}/`, data),
 };
