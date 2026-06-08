@@ -1,0 +1,10 @@
+[build]
+  builder = "nixpacks"
+  buildCommand = "npm run build"
+
+[deploy]
+  strategy = "static"
+  staticPublishDir = "build"
+
+[build.env]
+  CI = "false"
