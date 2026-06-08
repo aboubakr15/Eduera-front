@@ -1,5 +1,5 @@
-const BASE_URL = "";
-export const BACKEND_URL = "https://backend-copy-production-fef9.up.railway.app";
+const BASE_URL = process.env.REACT_APP_BASE_URL || "https://eduera-backend-production.up.railway.app";
+export const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://eduera-backend-production.up.railway.app";
 
 const api = {
   defaults: {

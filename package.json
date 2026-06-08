@@ -2,7 +2,7 @@
   "name": "eduera",
   "version": "0.1.0",
   "private": true,
-  "proxy": "https://backend-copy-production-fef9.up.railway.app/",
+  "proxy": "https://eduera-backend-production.up.railway.app/",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
