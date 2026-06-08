@@ -72,13 +72,10 @@ const InstructorMaterials = () => {
   };
   const handleViewFile = async (fullUrl) => {
     try {
-      const urlObj = new URL(fullUrl);
-      const relativePath = urlObj.pathname;
-
       const token =
         localStorage.getItem("access") || localStorage.getItem("token");
 
-      const response = await fetch(relativePath, {
+      const response = await fetch(fullUrl, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -89,8 +86,6 @@ const InstructorMaterials = () => {
       const blob = await response.blob();
       const fileUrl = URL.createObjectURL(blob);
       window.open(fileUrl, "_blank");
-
-      setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
     } catch (err) {
       console.error("Failed to open file:", err);
       alert("Failed to open the file.");
