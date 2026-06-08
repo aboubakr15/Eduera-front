@@ -72,8 +72,7 @@ const InstructorMaterials = () => {
   };
   const handleViewFile = async (fullUrl) => {
     try {
-      const token =
-        localStorage.getItem("access") || localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
 
       const response = await fetch(fullUrl, {
         headers: {
