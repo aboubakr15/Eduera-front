@@ -276,8 +276,17 @@ const StudentCourseDetails = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {a.submitted ? (
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    {a.file_download_url && (
+                      <button
+                        onClick={() => handleViewMaterial(a.file_download_url)}
+                        className="text-sm text-[#D67A1E] font-semibold hover:underline flex-shrink-0 flex items-center gap-1.5"
+                      >
+                        <FaDownload size={12} /> View File
+                      </button>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {a.submitted ? (
                       <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
                         <FaCheck size={10} /> Submitted
                       </span>
@@ -285,7 +294,8 @@ const StudentCourseDetails = () => {
                       <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
                         <FaTimes size={10} /> Pending
                       </span>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

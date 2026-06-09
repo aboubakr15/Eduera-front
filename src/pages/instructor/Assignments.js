@@ -19,6 +19,7 @@ const InstructorAssignments = () => {
   const [submitError, setSubmitError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [filterAssignmentType, setFilterAssignmentType] = useState(""); // ✅ فلتر النوع
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // States for Delete Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -63,16 +64,35 @@ const InstructorAssignments = () => {
     fetchData();
   }, []);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+    } else {
+      setSelectedFile(null);
+    }
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const response = await instructorApi.createAssignment(newAssignment);
+      const formData = new FormData();
+      Object.keys(newAssignment).forEach((key) => {
+        if (newAssignment[key] !== "" && newAssignment[key] !== null) {
+          formData.append(key, newAssignment[key]);
+        }
+      });
+      if (selectedFile) {
+        formData.append("file", selectedFile);
+      }
+      const response = await instructorApi.createAssignment(formData);
       if (response.data) {
         setAssignments([response.data, ...assignments]);
       }
       setShowModal(false);
+      setSelectedFile(null);
       setNewAssignment({
         course_offering: "",
         title: "",
@@ -111,6 +131,21 @@ const InstructorAssignments = () => {
       console.error("Failed to delete assignment:", err);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleViewFile = async (url) => {
+    if (!url) return;
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error("Failed to fetch file");
+      const blob = await response.blob();
+      window.open(URL.createObjectURL(blob), "_blank");
+    } catch (err) {
+      console.error("Failed to view file:", err);
     }
   };
 
@@ -242,6 +277,14 @@ const InstructorAssignments = () => {
                 <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
                   {parseInt(a.total_points)} Points
                 </span>
+                {a.file_download_url && (
+                  <button
+                    onClick={() => handleViewFile(a.file_download_url)}
+                    className="flex items-center gap-1.5 text-sm text-blue-600 font-semibold hover:underline"
+                  >
+                    View File
+                  </button>
+                )}
                 <button
                   onClick={() => navigate(`/instructor/submissions?assignment_id=${a.id}`)}
                   className="flex items-center gap-1.5 text-sm text-[#D67A1E] font-semibold hover:underline"
@@ -441,6 +484,37 @@ const InstructorAssignments = () => {
                     <option value="EXAM">Exam</option>
                     <option value="PROJECT">Project</option>
                   </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                  Assignment File (Optional)
+                </label>
+                <div
+                  onClick={() =>
+                    document.getElementById("file-upload-assignment").click()
+                  }
+                  className={`w-full text-sm border border-dashed rounded-xl px-4 py-4 text-center cursor-pointer transition-colors bg-gray-50/50 border-blue-300 hover:border-blue-400 hover:bg-blue-50/50`}
+                >
+                  <input
+                    id="file-upload-assignment"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  {selectedFile ? (
+                    <div className="flex items-center justify-center gap-2 text-[#D67A1E]">
+                      <FaClipboardList size={16} />
+                      <span className="font-medium truncate">
+                        {selectedFile.name}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">
+                      Click to upload assignment file
+                    </p>
+                  )}
                 </div>
               </div>
 
