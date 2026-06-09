@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import {
   FaSearch,
+  FaEdit,
+  FaTrash,
+  FaPlus,
   FaChevronLeft,
   FaChevronRight,
   FaChevronDown,
   FaUserGraduate,
   FaBookOpen,
-  FaTrash,
-  FaPlus,
 } from "react-icons/fa";
 import { adminApi } from "../../api/adminApi";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +22,18 @@ const Students = () => {
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All");
   const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    full_name: "",
+    department: "",
+    gender: "",
+    student_current_level: "",
+  });
 
   const [enrollmentModal, setEnrollmentModal] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
@@ -108,6 +121,7 @@ const Students = () => {
 
   const getDepartmentName = (deptId) => {
     if (!deptId) return "-";
+    if (typeof deptId === "object") return deptId.name || "-";
     const dept = departments.find(
       (d) => d.id === deptId || d.id === parseInt(deptId),
     );
@@ -123,7 +137,7 @@ const Students = () => {
       studentId.includes(search);
     const studentDeptId = s.department_id || s.department;
     const matchDept =
-      department === "All" || studentDeptId === parseInt(department);
+      department === "All" || studentDeptId == parseInt(department);
     return matchSearch && matchDept;
   });
 
@@ -146,26 +160,121 @@ const Students = () => {
     }
   };
 
+  const handleDelete = (id) => {
+    const student = students.find((s) => s.id === id);
+    setConfirmDelete(student);
+  };
+
+  const confirmDeleteStudent = async () => {
+    try {
+      await adminApi.updateUser(confirmDelete.id, { is_active: false });
+      setStudents((prev) => prev.filter((s) => s.id !== confirmDelete.id));
+      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+    } catch (error) {
+      console.error("Failed to delete student:", error);
+    }
+    setConfirmDelete(null);
+  };
+
+  const openAdd = () => {
+    setEditingStudent(null);
+    setForm({
+      username: "",
+      email: "",
+      password: "",
+      full_name: "",
+      department: "",
+      gender: "",
+      student_current_level: "",
+    });
+    setShowModal(true);
+  };
+
+  const openEdit = (student) => {
+    setEditingStudent(student);
+    setForm({
+      username: student.username || "",
+      email: student.email,
+      password: "",
+      full_name: student.full_name,
+      department: student.department || "",
+      gender: student.gender || "",
+      student_current_level: student.student_current_level || "",
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.email || !form.full_name) return;
+
+    const payload = {
+      username: form.username || form.email.split("@")[0],
+      email: form.email,
+      full_name: form.full_name,
+      department: form.department ? parseInt(form.department) : null,
+    };
+
+    if (form.password) payload.password = form.password;
+    if (form.gender) payload.gender = form.gender;
+    if (form.student_current_level) payload.student_current_level = parseInt(form.student_current_level);
+
+    try {
+      if (editingStudent) {
+        const response = await adminApi.updateUser(editingStudent.id, payload);
+        setStudents((prev) =>
+          prev.map((s) =>
+            s.id === editingStudent.id ? { ...s, ...response.data } : s,
+          ),
+        );
+      } else {
+        payload.primary_role = "STUDENT";
+        const response = await adminApi.createStudent(payload);
+        setStudents((prev) => [...prev, response.data]);
+      }
+      setShowModal(false);
+    } catch (error) {
+      console.error("Failed to save student:", error);
+    }
+  };
+
   const pageIds = paginated.map((s) => s.id);
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
   const navigate = useNavigate();
 
+  const levels = [
+    { value: "1", label: "Level 1" },
+    { value: "2", label: "Level 2" },
+    { value: "3", label: "Level 3" },
+    { value: "4", label: "Level 4" },
+    { value: "5", label: "Level 5" },
+  ];
+
   return (
     <div className="min-h-screen font-sans">
-      <div className="px-4 pt-4 pb-6 flex items-center gap-4">
+      <div className="px-4 pt-4 pb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+          >
+            <ArrowLeft
+              size={20}
+              className="transition-transform group-hover:-translate-x-1"
+            />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+            Students
+          </h1>
+        </div>
+
         <button
-          onClick={() => navigate(-1)}
-          className="flex items-center text-gray-500 hover:text-[#1B2036] transition-all group"
+          onClick={openAdd}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold text-sm hover:shadow-md shadow-sm transition-all duration-200"
         >
-          <ArrowLeft
-            size={20}
-            className="transition-transform group-hover:-translate-x-1"
-          />
+          <FaPlus size={12} />
+          Add Student
         </button>
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
-          Students
-        </h1>
       </div>
 
       <div className="mx-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -308,13 +417,27 @@ const Students = () => {
                       )}
                     </td>
                     <td className="py-3 pr-6 text-right">
-                      <button
-                        onClick={() => openEnrollmentModal(student)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition-colors"
-                      >
-                        <FaBookOpen size={12} />
-                        Enrollments
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEdit(student)}
+                          className="text-gray-400 hover:text-blue-500 transition-colors"
+                        >
+                          <FaEdit size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(student.id)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <FaTrash size={14} />
+                        </button>
+                        <button
+                          onClick={() => openEnrollmentModal(student)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition-colors"
+                        >
+                          <FaBookOpen size={11} />
+                          Enroll
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -354,6 +477,167 @@ const Students = () => {
         </div>
       </div>
 
+      {/* Add / Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100">
+            <h2 className="text-xl font-bold text-gray-800 mb-6">
+              {editingStudent ? "Edit Student" : "Add New Student"}
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. John Doe"
+                  value={form.full_name}
+                  onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+                  className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  placeholder="e.g. john@edu.com"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                  {editingStudent ? "New Password (leave blank to keep)" : "Password *"}
+                </label>
+                <input
+                  type="password"
+                  placeholder="Enter password"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                    Department
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={form.department}
+                      onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
+                      className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                    <FaChevronDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div className="w-28">
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                    Level
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={form.student_current_level}
+                      onChange={(e) => setForm((f) => ({ ...f, student_current_level: e.target.value }))}
+                      className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                    >
+                      <option value="">Level</option>
+                      {levels.map((l) => (
+                        <option key={l.value} value={l.value}>{l.label}</option>
+                      ))}
+                    </select>
+                    <FaChevronDown size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                  Gender
+                </label>
+                <div className="flex gap-4">
+                  {["M", "F"].map((g) => (
+                    <label key={g} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={g}
+                        checked={form.gender === g}
+                        onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+                        className="accent-[#D67A1E]"
+                      />
+                      <span className="text-sm text-gray-600">{g === "M" ? "Male" : "Female"}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-7">
+              <button
+                onClick={() => setShowModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-100 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="flex-1 py-2.5 rounded-xl bg-[#D67A1E] text-white text-sm font-semibold hover:bg-[#af6b26] transition-colors"
+              >
+                {editingStudent ? "Save Changes" : "Add Student"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm border border-gray-100 text-center">
+            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaTrash size={20} className="text-red-400" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-800 mb-1">
+              Delete Student?
+            </h2>
+            <p className="text-sm text-gray-400 mb-1">
+              You are about to deactivate{" "}
+              <span className="font-semibold text-gray-700">
+                {confirmDelete.full_name}
+              </span>
+            </p>
+            <p className="text-xs text-gray-400 mb-7">
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-100 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteStudent}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Enrollment Modal */}
       {enrollmentModal && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
@@ -375,7 +659,6 @@ const Students = () => {
               </button>
             </div>
 
-            {/* Current Enrollments */}
             <div className="mb-6">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                 Current Enrollments
@@ -428,7 +711,6 @@ const Students = () => {
               )}
             </div>
 
-            {/* Add Enrollment */}
             <div>
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                 Enroll in Course Offering

@@ -156,6 +156,7 @@ const Instructors = () => {
           ),
         );
       } else {
+        payload.primary_role = "PROFESSOR";
         const response = await adminApi.createInstructor(payload);
         setInstructors((prev) => [...prev, response.data]);
       }

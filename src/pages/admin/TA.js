@@ -155,6 +155,7 @@ const TA = () => {
           ),
         );
       } else {
+        payload.primary_role = "TA";
         const response = await adminApi.createTA(payload);
         setTAs((prev) => [...prev, response.data]);
       }

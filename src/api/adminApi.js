@@ -17,6 +17,7 @@ export const adminApi = {
   updateUser: (id, data) => api.patch(`/admin/users/${id}/`, data),
   createInstructor: (data) => api.post('/admin/users/instructors/', data),
   createTA: (data) => api.post('/admin/users/tas/', data),
+  createStudent: (data) => api.post('/admin/users/students/', data),
    
   getAnnouncements: () => api.get('/admin/announcements/'),
   createAnnouncement: (data) => api.post('/admin/announcements/', data),
