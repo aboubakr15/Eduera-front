@@ -58,7 +58,6 @@ const Account = () => {
   const fileRef = useRef();
 
   const [profile, setProfile] = useState(null);
-  const [systemStats, setSystemStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editField, setEditField] = useState(null);
@@ -79,12 +78,8 @@ const Account = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, statsRes] = await Promise.all([
-          adminApi.getProfile(),
-          adminApi.getSystemStats(),
-        ]);
+        const profileRes = await adminApi.getProfile();
         setProfile(profileRes.data);
-        setSystemStats(statsRes.data);
       } catch (err) {
         console.error("Failed to fetch data:", err);
         setError("Failed to load account data");
@@ -145,38 +140,36 @@ const Account = () => {
   };
 
   const fields = [
-    { label: "First Name", key: "first_name", value: profile?.first_name },
-    { label: "Last Name", key: "last_name", value: profile?.last_name },
+    { label: "Full Name", key: "full_name", value: profile?.full_name },
     { label: "Email", key: "email", value: profile?.email },
     { label: "User Role", key: "role", value: "Admin", readonly: true },
-    { label: "University", key: "university", value: profile?.university },
   ];
 
   const stats = [
     {
       label: "Total Students",
-      value: systemStats?.total_students || 0,
+      value: profile?.total_students || 0,
       color: "text-blue-600",
       bg: "bg-blue-50",
       border: "border-blue-100",
     },
     {
       label: "Total Instructors",
-      value: systemStats?.total_instructors || 0,
+      value: profile?.total_instructors || 0,
       color: "text-purple-600",
       bg: "bg-purple-50",
       border: "border-purple-100",
     },
     {
       label: "Total Courses",
-      value: systemStats?.total_courses || 0,
+      value: profile?.total_courses || 0,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
       border: "border-emerald-100",
     },
     {
       label: "Total TAs",
-      value: systemStats?.total_tas || 0,
+      value: profile?.total_tas || 0,
       color: "text-amber-600",
       bg: "bg-amber-50",
       border: "border-amber-100",
@@ -184,8 +177,7 @@ const Account = () => {
   ];
 
   const userName = profile
-    ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
-      profile.email?.split("@")[0]
+    ? profile.full_name || profile.email?.split("@")[0]
     : "Admin";
 
   if (loading) {

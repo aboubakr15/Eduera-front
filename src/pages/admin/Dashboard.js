@@ -12,12 +12,7 @@ import {
 import { MdNotifications } from "react-icons/md";
 import { adminApi } from "../../api/adminApi";
 
-const departments = [
-  { label: "Computer Science", value: 1800, color: "#3b82f6" },
-  { label: "Information System", value: 1500, color: "#8b5cf6" },
-  { label: "Internet Technology", value: 1100, color: "#10b981" },
-  { label: "Artificial Intelligence", value: 900, color: "#f59e0b" },
-];
+const DEPT_COLORS = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6", "#f97316"];
 
 const scheduleEvents = [
   {
@@ -224,7 +219,15 @@ function ScheduleSection() {
   );
 }
 
-function DepartmentsDonut() {
+function DepartmentsDonut({ stats }) {
+  const deptData = stats?.students_per_department;
+  const departments = deptData
+    ? Object.entries(deptData).map(([label, value], i) => ({
+        label,
+        value,
+        color: DEPT_COLORS[i % DEPT_COLORS.length],
+      }))
+    : [];
   const total = departments.reduce((sum, d) => sum + d.value, 0);
   const size = 160;
   const strokeWidth = 18;
@@ -626,7 +629,7 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <StudentsChart stats={stats} />
-          <DepartmentsDonut />
+          <DepartmentsDonut stats={stats} />
         </div>
 
         <AnnouncementsSection />

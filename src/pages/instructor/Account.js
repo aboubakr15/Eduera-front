@@ -143,18 +143,10 @@ const Account = () => {
     { label: "Full Name", key: "full_name", value: profile?.full_name },
     { label: "Email", key: "email", value: profile?.email },
     { label: "User Role", key: "role", value: "Instructor", readonly: true },
-    {
-      label: "University",
-      key: "university",
-      value: profile?.university,
-      readonly: true,
-    },
   ];
 
   const userName = profile
-    ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
-      profile.full_name ||
-      profile.email?.split("@")[0]
+    ? profile.full_name || profile.email?.split("@")[0]
     : "Instructor";
 
   if (loading) {
