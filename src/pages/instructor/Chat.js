@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { instructorApi } from "../../api/instructorApi";
-import { FaPaperPlane, FaComments, FaBook, FaUsers, FaWifi } from "react-icons/fa";
+import { FaPaperPlane, FaComments, FaBook, FaUsers, FaWifi, FaLock, FaLockOpen } from "react-icons/fa";
 import { ArrowLeft, WifiOff } from "lucide-react";
 
 /**
@@ -69,7 +69,7 @@ const InstructorChat = () => {
 
     // Determine WS host from current API base URL
     const apiBase = process.env.REACT_APP_API_URL || window.location.origin;
-    const wsBase = apiBase.replace(/^http/, "ws");
+    const wsBase = apiBase.replace(/^http/, "ws").replace(/\/$/, "");
     const wsUrl = `${wsBase}/ws/course-chat/${course.id}/?token=${token}`;
 
     setWsStatus("connecting");
@@ -150,10 +150,26 @@ const InstructorChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ── Toggle Chat Open/Close ──────────────────────────────────────────────
+  const handleToggleChat = async () => {
+    if (!selectedCourse) return;
+    try {
+      const res = await instructorApi.updateCourse(selectedCourse.id, {
+        is_chat_active: !selectedCourse.is_chat_active
+      });
+      const updatedCourse = res.data;
+      setSelectedCourse(updatedCourse);
+      setCourses(courses.map(c => c.id === updatedCourse.id ? updatedCourse : c));
+    } catch (err) {
+      console.error("Failed to toggle chat:", err);
+    }
+  };
+
   // ── Send message ────────────────────────────────────────────────────────
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedCourse) return;
+    if (selectedCourse.is_chat_active === false) return; // Prevent if closed
 
     const content = newMessage.trim();
     setNewMessage("");
@@ -282,6 +298,21 @@ const InstructorChat = () => {
                   {selectedCourse.enrolled_count || 0} Members
                 </span>
               </div>
+              <button
+                onClick={handleToggleChat}
+                className={`ml-2 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                  selectedCourse.is_chat_active !== false
+                    ? "bg-red-50 text-red-600 hover:bg-red-100"
+                    : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                }`}
+                title={selectedCourse.is_chat_active !== false ? "Close Chat" : "Open Chat"}
+              >
+                {selectedCourse.is_chat_active !== false ? (
+                  <><FaLock size={10} /> Close Chat</>
+                ) : (
+                  <><FaLockOpen size={10} /> Open Chat</>
+                )}
+              </button>
             </div>
 
             {/* Messages */}
@@ -339,13 +370,13 @@ const InstructorChat = () => {
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={`Message #${selectedCourse.course_code}...`}
-                  className="flex-1 text-sm border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 bg-gray-50 transition-all"
-                  disabled={sending}
+                  placeholder={selectedCourse.is_chat_active !== false ? `Message #${selectedCourse.course_code}...` : "Chat is closed"}
+                  className="flex-1 text-sm border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 bg-gray-50 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={sending || selectedCourse.is_chat_active === false}
                 />
                 <button
                   type="submit"
-                  disabled={!newMessage.trim() || sending}
+                  disabled={!newMessage.trim() || sending || selectedCourse.is_chat_active === false}
                   className="w-10 h-10 rounded-xl bg-[#323d6d] text-white flex items-center justify-center hover:bg-[#252b45] transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FaPaperPlane size={14} />

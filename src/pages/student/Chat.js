@@ -89,7 +89,7 @@ const StudentChat = () => {
     if (!token) return;
 
     const apiBase = process.env.REACT_APP_API_URL || window.location.origin;
-    const wsBase = apiBase.replace(/^http/, "ws");
+    const wsBase = apiBase.replace(/^http/, "ws").replace(/\/$/, "");
     const wsUrl = `${wsBase}/ws/course-chat/${course.id}/?token=${token}`;
 
     setWsStatus("connecting");
@@ -159,6 +159,7 @@ const StudentChat = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedCourse) return;
+    if (selectedCourse.is_chat_active === false) return; // Prevent if closed
 
     const content = newMessage.trim();
     setNewMessage("");
@@ -362,13 +363,13 @@ const StudentChat = () => {
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={`Message #${selectedCourse.course_code}...`}
-                  className="flex-1 text-[13px] border border-gray-200/60 rounded-xl px-4 py-2.5 outline-none focus:border-[#465182]/25 focus:ring-2 focus:ring-[#465182]/5 bg-[#F8F9FB] transition-all duration-200 placeholder-gray-400"
-                  disabled={sending}
+                  placeholder={selectedCourse.is_chat_active !== false ? `Message #${selectedCourse.course_code}...` : "Chat is closed"}
+                  className="flex-1 text-[13px] border border-gray-200/60 rounded-xl px-4 py-2.5 outline-none focus:border-[#465182]/25 focus:ring-2 focus:ring-[#465182]/5 bg-[#F8F9FB] transition-all duration-200 placeholder-gray-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={sending || selectedCourse.is_chat_active === false}
                 />
                 <button
                   type="submit"
-                  disabled={!newMessage.trim() || sending}
+                  disabled={!newMessage.trim() || sending || selectedCourse.is_chat_active === false}
                   className="w-9 h-9 rounded-xl bg-[#465182] text-white flex items-center justify-center hover:bg-[#3a4570] transition-all duration-200 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-[#465182]/15 active:scale-95"
                 >
                   <FaPaperPlane size={12} />
