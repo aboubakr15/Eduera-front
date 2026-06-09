@@ -30,7 +30,7 @@ const StudentCourseDetails = () => {
         } catch (e) {
           const coursesRes = await studentApi.getCourses();
           const foundCourse = coursesRes.data.find(
-            (c) => c.id === parseInt(id) || c.id === id,
+            (c) => c.course_offering === parseInt(id) || c.course_offering === id,
           );
           if (foundCourse) {
             response = { data: foundCourse };

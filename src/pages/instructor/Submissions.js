@@ -16,6 +16,8 @@ const InstructorSubmissions = () => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [gradeData, setGradeData] = useState({ grade: "", notes: "" });
   const [grading, setGrading] = useState(false);
+  const [showTextModal, setShowTextModal] = useState(false);
+  const [textToView, setTextToView] = useState("");
   const [gradeError, setGradeError] = useState(null);
   const [gradeSuccess, setGradeSuccess] = useState(null);
   const [selected, setSelected] = useState([]);
@@ -270,6 +272,18 @@ const InstructorSubmissions = () => {
                           View
                         </button>
                       )}
+                      {s.submitted_text && (
+                        <button
+                          onClick={() => {
+                            setTextToView(s.submitted_text);
+                            setShowTextModal(true);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <FaFileAlt size={11} />
+                          Text
+                        </button>
+                      )}
                       {s.status !== "GRADED" && (
                         <button
                           onClick={() => {
@@ -411,6 +425,31 @@ const InstructorSubmissions = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showTextModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-gray-100 my-8">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              Submitted Content
+            </h2>
+            <div className="bg-gray-50 p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border border-gray-200">
+              {textToView}
+            </div>
+            <div className="flex justify-end pt-4 mt-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTextModal(false);
+                  setTextToView("");
+                }}
+                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -246,7 +246,7 @@ const InstructorAssignments = () => {
                   onClick={() => navigate(`/instructor/submissions?assignment_id=${a.id}`)}
                   className="flex items-center gap-1.5 text-sm text-[#D67A1E] font-semibold hover:underline"
                 >
-                  View
+                  Submissions
                 </button>
                 <button
                   onClick={() => openDeleteModal(a)}
