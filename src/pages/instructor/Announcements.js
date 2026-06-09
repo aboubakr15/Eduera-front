@@ -244,26 +244,7 @@ const InstructorAnnouncements = () => {
                 </select>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-xl border border-gray-100">
-                <input
-                  type="checkbox"
-                  id="isGlobal"
-                  checked={newAnnouncement.is_global}
-                  onChange={(e) =>
-                    setNewAnnouncement({
-                      ...newAnnouncement,
-                      is_global: e.target.checked,
-                    })
-                  }
-                  className="w-4 h-4 rounded text-[#D67A1E] border-gray-300 focus:ring-[#D67A1E] bg-gray-100"
-                />
-                <label
-                  htmlFor="isGlobal"
-                  className="text-sm font-medium text-gray-700 cursor-pointer"
-                >
-                  Post as a Global Announcement (Visible to everyone)
-                </label>
-              </div>
+
 
               <div className="flex gap-3 pt-4 border-t border-gray-100 mt-6">
                 <button
