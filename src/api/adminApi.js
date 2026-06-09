@@ -15,6 +15,7 @@ export const adminApi = {
    
   getUsers: (role) => api.get('/admin/users/', { params: { role } }),
   updateUser: (id, data) => api.patch(`/admin/users/${id}/`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}/`),
   createInstructor: (data) => api.post('/admin/users/instructors/', data),
   createTA: (data) => api.post('/admin/users/tas/', data),
   createStudent: (data) => api.post('/admin/users/students/', data),

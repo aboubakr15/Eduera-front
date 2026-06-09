@@ -107,7 +107,7 @@ const Instructors = () => {
 
   const confirmDeleteInstructor = async () => {
     try {
-      await adminApi.updateUser(confirmDelete.id, { is_active: false });
+      await adminApi.deleteUser(confirmDelete.id);
       setInstructors((prev) => prev.filter((s) => s.id !== confirmDelete.id));
       setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
     } catch (error) {

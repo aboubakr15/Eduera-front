@@ -106,7 +106,7 @@ const TA = () => {
 
   const confirmDeleteTA = async () => {
     try {
-      await adminApi.updateUser(confirmDelete.id, { is_active: false });
+      await adminApi.deleteUser(confirmDelete.id);
       setTAs((prev) => prev.filter((s) => s.id !== confirmDelete.id));
       setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
     } catch (error) {
