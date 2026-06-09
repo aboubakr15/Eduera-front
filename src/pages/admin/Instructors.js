@@ -29,17 +29,21 @@ const Instructors = () => {
     full_name: "",
     department: "",
   });
-
-  const departments = [
-    { id: 1, name: "Computer Science" },
-    { id: 2, name: "Artificial Intelligence" },
-    { id: 3, name: "Information System" },
-    { id: 4, name: "Software Engineering" },
-  ];
+  const [departments, setDepartments] = useState([]);
 
   useEffect(() => {
     fetchInstructors();
+    fetchDepartments();
   }, [search, department]);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await adminApi.getDepartments();
+      setDepartments(response.data);
+    } catch (error) {
+      console.error("Failed to fetch departments:", error);
+    }
+  };
 
   const fetchInstructors = async () => {
     try {

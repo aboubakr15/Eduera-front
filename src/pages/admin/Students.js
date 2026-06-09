@@ -28,14 +28,12 @@ const Students = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [studentsRes, summaryRes] = await Promise.all([
+      const [studentsRes, deptsRes] = await Promise.all([
         adminApi.getUsers("STUDENT"),
-        adminApi.getDashboardSummary(),
+        adminApi.getDepartments(),
       ]);
       setStudents(studentsRes.data);
-      if (summaryRes.data.departments) {
-        setDepartments(summaryRes.data.departments);
-      }
+      setDepartments(deptsRes.data);
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
@@ -135,20 +133,11 @@ const Students = () => {
                 <option key="all" value="All">
                   All
                 </option>
-                {departments.length > 0 ? (
-                  departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value={1}>Computer Science</option>
-                    <option value={2}>Artificial Intelligence</option>
-                    <option value={3}>Information System</option>
-                    <option value={4}>Software Engineering</option>
-                  </>
-                )}
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
               </select>
               <FaChevronDown
                 size={11}

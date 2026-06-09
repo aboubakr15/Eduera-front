@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaPlus,
   FaSearch,
@@ -11,56 +11,12 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-const initialDepartments = [
-  {
-    id: 1,
-    name: "Computer Science",
-    code: "CS",
-    head: "Dr. Walter White",
-    numStudents: 450,
-    numInstructors: 18,
-    establishedYear: 1995,
-  },
-  {
-    id: 2,
-    name: "Artificial Intelligence",
-    code: "AI",
-    head: "Dr. John wick",
-    numStudents: 320,
-    numInstructors: 14,
-    establishedYear: 2010,
-  },
-  {
-    id: 3,
-    name: "Information System",
-    code: "IS",
-    head: "Dr. White Nigga",
-    numStudents: 390,
-    numInstructors: 16,
-    establishedYear: 2000,
-  },
-  {
-    id: 4,
-    name: "Internet Technology",
-    code: "IT",
-    head: "Dr. Batman",
-    numStudents: 280,
-    numInstructors: 12,
-    establishedYear: 2005,
-  },
-  {
-    id: 5,
-    name: "Software Engineering",
-    code: "SE",
-    head: "Dr. Joker",
-    numStudents: 360,
-    numInstructors: 15,
-    establishedYear: 2008,
-  },
-];
+import { adminApi } from "../../api/adminApi";
 
 const Departments = () => {
-  const [departments, setDepartments] = useState(initialDepartments);
+  const [departments, setDepartments] = useState([]);
+  const [professors, setProfessors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -69,14 +25,39 @@ const Departments = () => {
   const [editingDepartment, setEditingDepartment] = useState(null);
   const [form, setForm] = useState({
     name: "",
+    name_ar: "",
     code: "",
-    head: "",
-    numStudents: "",
-    numInstructors: "",
-    establishedYear: "",
+    head_of_department: "",
   });
 
   const perPage = 8;
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchDepartments();
+    fetchProfessors();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true);
+      const response = await adminApi.getDepartments({ search });
+      setDepartments(response.data);
+    } catch (error) {
+      console.error("Failed to fetch departments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProfessors = async () => {
+    try {
+      const response = await adminApi.getUsers("PROFESSOR");
+      setProfessors(response.data);
+    } catch (error) {
+      console.error("Failed to fetch professors:", error);
+    }
+  };
 
   const filtered = departments.filter(
     (d) =>
@@ -108,9 +89,14 @@ const Departments = () => {
     setConfirmDelete(dept);
   };
 
-  const confirmDeleteDepartment = () => {
-    setDepartments((prev) => prev.filter((d) => d.id !== confirmDelete.id));
-    setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+  const confirmDeleteDepartment = async () => {
+    try {
+      await adminApi.deleteDepartment(confirmDelete.id);
+      setDepartments((prev) => prev.filter((d) => d.id !== confirmDelete.id));
+      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+    } catch (error) {
+      console.error("Failed to delete department:", error);
+    }
     setConfirmDelete(null);
   };
 
@@ -118,11 +104,9 @@ const Departments = () => {
     setEditingDepartment(null);
     setForm({
       name: "",
+      name_ar: "",
       code: "",
-      head: "",
-      numStudents: "",
-      numInstructors: "",
-      establishedYear: "",
+      head_of_department: "",
     });
     setShowModal(true);
   };
@@ -131,34 +115,47 @@ const Departments = () => {
     setEditingDepartment(dept);
     setForm({
       name: dept.name,
+      name_ar: dept.name_ar || "",
       code: dept.code,
-      head: dept.head,
-      numStudents: dept.numStudents,
-      numInstructors: dept.numInstructors,
-      establishedYear: dept.establishedYear,
+      head_of_department: dept.head_of_department || "",
     });
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.code) return;
-    if (editingDepartment) {
-      setDepartments((prev) =>
-        prev.map((d) =>
-          d.id === editingDepartment.id ? { ...d, ...form } : d,
-        ),
-      );
-    } else {
-      const newId = Date.now();
-      setDepartments((prev) => [...prev, { id: newId, ...form }]);
+
+    const payload = {
+      name: form.name,
+      name_ar: form.name_ar,
+      code: form.code,
+      head_of_department: form.head_of_department || null,
+    };
+
+    try {
+      if (editingDepartment) {
+        const response = await adminApi.updateDepartment(
+          editingDepartment.id,
+          payload,
+        );
+        setDepartments((prev) =>
+          prev.map((d) =>
+            d.id === editingDepartment.id ? { ...d, ...response.data } : d,
+          ),
+        );
+      } else {
+        const response = await adminApi.createDepartment(payload);
+        setDepartments((prev) => [...prev, response.data]);
+      }
+      setShowModal(false);
+    } catch (error) {
+      console.error("Failed to save department:", error);
     }
-    setShowModal(false);
   };
 
   const pageIds = paginated.map((d) => d.id);
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
-  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen font-sans">
@@ -229,24 +226,24 @@ const Departments = () => {
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
                 Head of Department
               </th>
-              <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
-                No. Students
-              </th>
-              <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
-                No. Instructors
-              </th>
-              <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
-                Est. Year
-              </th>
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right pr-6">
                 Action
               </th>
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan={8} className="text-center py-16 text-gray-300">
+                <td colSpan={5} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading departments...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center py-16 text-gray-300">
                   <FaBuilding size={32} className="mx-auto mb-3 opacity-30" />
                   <p className="text-sm">No departments found</p>
                 </td>
@@ -274,16 +271,7 @@ const Departments = () => {
                     {dept.code}
                   </td>
                   <td className="py-3 px-2 text-sm text-gray-400">
-                    {dept.head}
-                  </td>
-                  <td className="py-3 px-2 text-sm text-gray-400">
-                    {dept.numStudents}
-                  </td>
-                  <td className="py-3 px-2 text-sm text-gray-400">
-                    {dept.numInstructors}
-                  </td>
-                  <td className="py-3 px-2 text-sm text-gray-400">
-                    {dept.establishedYear}
+                    {dept.head_of_department_name || "-"}
                   </td>
                   <td className="py-3 pr-6 text-right">
                     <div className="flex items-center justify-end gap-3">
@@ -391,34 +379,16 @@ const Departments = () => {
                   placeholder: "e.g. Computer Science",
                 },
                 {
+                  label: "Arabic Name",
+                  key: "name_ar",
+                  type: "text",
+                  placeholder: "e.g. علوم الحاسب",
+                },
+                {
                   label: "Code",
                   key: "code",
                   type: "text",
                   placeholder: "e.g. CS",
-                },
-                {
-                  label: "Head of Department",
-                  key: "head",
-                  type: "text",
-                  placeholder: "e.g. Dr. Ahmed Hassan",
-                },
-                {
-                  label: "Number of Students",
-                  key: "numStudents",
-                  type: "number",
-                  placeholder: "e.g. 450",
-                },
-                {
-                  label: "Number of Instructors",
-                  key: "numInstructors",
-                  type: "number",
-                  placeholder: "e.g. 18",
-                },
-                {
-                  label: "Established Year",
-                  key: "establishedYear",
-                  type: "number",
-                  placeholder: "e.g. 1995",
                 },
               ].map(({ label, key, type, placeholder }) => (
                 <div key={key}>
@@ -436,6 +406,36 @@ const Departments = () => {
                   />
                 </div>
               ))}
+
+              {/* Head of Department Select */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                  Head of Department
+                </label>
+                <div className="relative">
+                  <select
+                    value={form.head_of_department}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        head_of_department: e.target.value,
+                      }))
+                    }
+                    className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                  >
+                    <option value="">-- Select Professor --</option>
+                    {professors.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.full_name}
+                      </option>
+                    ))}
+                  </select>
+                  <FaChevronDown
+                    size={11}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3 mt-7">

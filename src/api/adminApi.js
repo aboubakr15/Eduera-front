@@ -39,4 +39,9 @@ export const adminApi = {
   changePassword: (data) => api.post('/api/auth/change-password/', data),
 
   getNotifications: () => api.get('/admin/notifications/'),
+
+  getDepartments: (params) => api.get('/admin/departments/', { params }),
+  createDepartment: (data) => api.post('/admin/departments/', data),
+  updateDepartment: (id, data) => api.patch(`/admin/departments/${id}/`, data),
+  deleteDepartment: (id) => api.delete(`/admin/departments/${id}/`),
 };
