@@ -17,7 +17,7 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import Avatar from "../../assets/images/man.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import stuImg from "../../assets/images/stu.png";
 import botImg from "../../assets/images/bot.png";
 
