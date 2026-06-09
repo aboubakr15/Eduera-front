@@ -323,102 +323,63 @@ function DepartmentsDonut({ stats }) {
   );
 }
 
-function DonutChart({ passed, failed }) {
-  const total = passed + failed;
+const StudentsChart = ({ stats }) => {
+  const malePct = stats.gender_distribution?.male_percentage ?? 0;
+  const femalePct = stats.gender_distribution?.female_percentage ?? 0;
+  const maleCount = Math.round(stats.total_students * (malePct / 100));
+  const femaleCount = stats.total_students - maleCount;
+  const total = maleCount + femaleCount;
   const size = 160;
   const strokeWidth = 18;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const center = size / 2;
-  const passedRatio = total > 0 ? passed / total : 0;
-  const failedRatio = total > 0 ? failed / total : 0;
-  const gap = 6;
-  const gapRatio = gap / 360;
-  const passedDash = (passedRatio - gapRatio) * circumference;
-  const failedDash = (failedRatio - gapRatio) * circumference;
-  const passedOffset = 0;
-  const failedOffset = -(passedRatio * circumference);
-
-  return (
-    <div
-      className="relative flex items-center justify-center"
-      style={{ width: size, height: size }}
-    >
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke="#f1f5f9"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke="#3b82f6"
-          strokeWidth={strokeWidth}
-          strokeDasharray={`${Math.max(0, passedDash)} ${circumference}`}
-          strokeDashoffset={passedOffset}
-          strokeLinecap="round"
-        />
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke="#10b981"
-          strokeWidth={strokeWidth}
-          strokeDasharray={`${Math.max(0, failedDash)} ${circumference}`}
-          strokeDashoffset={failedOffset}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-gray-800">
-          {total.toLocaleString()}
-        </span>
-        <span className="text-xs text-gray-400 mt-0.5">Total Students</span>
-      </div>
-    </div>
-  );
-}
-
-const StudentsChart = ({ stats }) => {
-  const malePct = stats.gender_distribution?.male_percentage ?? 0;
-  const femalePct = stats.gender_distribution?.female_percentage ?? 0;
-  const passed = Math.round(stats.total_students * (malePct / 100));
-  const failed = stats.total_students - passed;
-  const passedPct = malePct.toFixed(1);
-  const failedPct = femalePct.toFixed(1);
-  const legend = [
-    { label: "Male", value: passed, pct: passedPct, color: "bg-blue-500" },
-    { label: "Female", value: failed, pct: failedPct, color: "bg-emerald-500" },
+  const gapDeg = 4;
+  const gapRatio = gapDeg / 360;
+  const segments = [
+    { label: "Male", value: maleCount, pct: malePct.toFixed(1), color: "#3b82f6", bg: "bg-blue-500", ratio: total > 0 ? maleCount / total : 0 },
+    { label: "Female", value: femaleCount, pct: femalePct.toFixed(1), color: "#10b981", bg: "bg-emerald-500", ratio: total > 0 ? femaleCount / total : 0 },
   ];
+  let offset = 0;
+  const chartSegments = segments.map((seg) => {
+    const ratio = seg.ratio;
+    const dash = Math.max(0, (ratio - gapRatio) * circumference);
+    const result = { ...seg, dash, offset: -offset * circumference };
+    offset += ratio;
+    return result;
+  });
 
   return (
     <div className="bg-gray-50 rounded-2xl p-5 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-bold text-gray-800">Students</h3>
       </div>
-      <div className="flex justify-center mb-4">
-        <DonutChart passed={passed} failed={failed} />
+      <div className="flex justify-center mb-5">
+        <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+          <svg width={size} height={size} className="-rotate-90">
+            <circle cx={center} cy={center} r={radius} fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth} />
+            {chartSegments.map((seg, i) => (
+              <circle key={i} cx={center} cy={center} r={radius} fill="none" stroke={seg.color} strokeWidth={strokeWidth}
+                strokeDasharray={`${seg.dash} ${circumference}`}
+                strokeDashoffset={seg.offset}
+                strokeLinecap="round" />
+            ))}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-2xl font-bold text-gray-800">{total.toLocaleString()}</span>
+            <span className="text-xs text-gray-400 mt-0.5">Total</span>
+          </div>
+        </div>
       </div>
       <div className="space-y-3">
-        {legend.map((item) => (
+        {segments.map((item) => (
           <div key={item.label} className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`w-3 h-3 rounded-sm ${item.color}`} />
-              <span className="text-sm font-semibold text-gray-700">
-                {item.label}
-              </span>
+              <span className={`w-3 h-3 rounded-sm ${item.bg}`} />
+              <span className="text-sm font-semibold text-gray-700">{item.label}</span>
               <span className="text-xs text-gray-400">({item.pct}%)</span>
             </div>
-            <span className="text-sm text-gray-600 font-medium">
-              {item.value.toLocaleString()} students
-            </span>
+            <span className="text-sm text-gray-600 font-medium">{item.value.toLocaleString()} students</span>
           </div>
         ))}
       </div>

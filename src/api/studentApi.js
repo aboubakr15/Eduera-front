@@ -17,7 +17,7 @@ export const studentApi = {
   
   getTodo: () => api.get('/api/student/todo/'),
   createTodo: (data) => api.post('/api/student/todo/', data),
-  updateTodo: (id, data) => api.post(`/api/student/todo/${id}/`, data),
+  updateTodo: (id, data) => api.patch(`/api/student/todo/${id}/`, data),
   deleteTodo: (id) => api.delete(`/api/student/todo/${id}/`),
   
   getProfile: () => api.get('/api/student/profile/'),

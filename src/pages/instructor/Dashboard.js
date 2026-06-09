@@ -81,6 +81,7 @@ const InstructorDashboard = () => {
     pending_submissions,
     upcoming_assignments,
     recent_announcements,
+    portal_announcements,
     courses,
   } = data || {};
 
@@ -257,65 +258,24 @@ const InstructorDashboard = () => {
             </p>
 
             <div className="max-h-[260px] overflow-y-auto space-y-3 portal-scroll">
-              <div className="p-3 bg-gray-50 rounded-xl flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <FaBullhorn size={12} className="text-[#D67A1E]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">
-                    The portal will be down for maintenance on Friday from 10:00
-                    AM to 12:00 PM.
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Admin • 2 hours ago
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-gray-50 rounded-xl flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <FaBullhorn size={12} className="text-[#D67A1E]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">
-                    Please update your profile information before the end of the
-                    week to ensure you receive all notifications.
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Admin • 5 hours ago
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-gray-50 rounded-xl flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <FaBullhorn size={12} className="text-[#D67A1E]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">
-                    Please update your profile information before the end of the
-                    week to ensure you receive all notifications.
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Admin • 5 hours ago
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-gray-50 rounded-xl flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <FaBullhorn size={12} className="text-[#D67A1E]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">
-                    Please update your profile information before the end of the
-                    week to ensure you receive all notifications.
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Admin • 5 hours ago
-                  </p>
-                </div>
-              </div>
+              {portal_announcements?.length > 0 ? (
+                portal_announcements.map((ann) => (
+                  <div key={ann.id} className="p-3 bg-gray-50 rounded-xl flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <FaBullhorn size={12} className="text-[#D67A1E]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800">{ann.title}</p>
+                      <p className="text-xs text-gray-500 mt-1">{ann.content}</p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        {ann.author_name} • {ann.time_since} ago
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-400">No portal announcements</p>
+              )}
             </div>
           </div>
 
