@@ -61,22 +61,23 @@ const managementItems = [
   { label: "UploadCenter", icon: <FaRobot size={18} /> },
 ];
 
-const bottomNavItems = [
-  {
-    label: "Account",
-    icon: <MdAccountCircle size={20} />,
-    path: "/instructor/account",
-  },
-];
-
 const InstructorSidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
 
+  const basePath = user?.primary_role === "TA" ? "/ta" : "/instructor";
   const roleLabel =
     user?.primary_role === "PROFESSOR" ? "Professor" : "Teaching Assistant";
+
+const bottomNavItems = [
+  {
+    label: "Account",
+    icon: <MdAccountCircle size={20} />,
+    path: `${basePath}/account`,
+  },
+];
 
   return (
     <div
@@ -141,7 +142,7 @@ const InstructorSidebar = () => {
               </p>
             </div>
             <button
-              onClick={() => navigate("/instructor/account")}
+              onClick={() => navigate(`${basePath}/account`)}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/10 transition-colors"
             >
               <MdAccountCircle size={16} className="text-gray-400" />
@@ -161,7 +162,7 @@ const InstructorSidebar = () => {
           {overviewItems.map((item) => (
             <NavLink
               key={item.label}
-              to={`/instructor/${item.label.toLowerCase()}`}
+              to={`${basePath}/${item.label.toLowerCase()}`}
               title={!isOpen ? item.label : ""}
               className={({ isActive }) =>
                 `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
@@ -194,7 +195,7 @@ const InstructorSidebar = () => {
           {managementItems.map((item) => (
             <NavLink
               key={item.label}
-              to={`/instructor/${item.label.toLowerCase()}`}
+              to={`${basePath}/${item.label.toLowerCase()}`}
               title={!isOpen ? item.label : ""}
               className={({ isActive }) =>
                 `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
