@@ -145,6 +145,8 @@ export const router = createBrowserRouter([
           { path: "announcements", element: <InstructorAnnouncements /> },
           { path: "chat", element: <InstructorChat /> },
           { path: "notifications", element: <InstructorNotifications /> },
+          { path: "account", element: <InstructorAccount /> },
+          { path: "chatbot", element: <InstructorChatBot /> },
         ],
       },
     ],

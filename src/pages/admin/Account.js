@@ -107,11 +107,19 @@ const Account = () => {
     }
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       const url = URL.createObjectURL(file);
       setProfile((prev) => ({ ...prev, profile_picture_url: url }));
+      
+      const formData = new FormData();
+      formData.append("profile_picture", file);
+      try {
+        await adminApi.updateProfile(formData);
+      } catch (err) {
+        console.error("Failed to upload image:", err);
+      }
     }
   };
 

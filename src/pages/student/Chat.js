@@ -53,19 +53,18 @@ const StudentChat = () => {
         const response = await studentApi.getCourses();
         // studentApi.getCourses() returns enrollments; normalise to course list
         const raw = Array.isArray(response.data) ? response.data : [];
-        // Each item may be an enrollment {course_offering: {...}} or a course directly
+        // Each item is an enrollment which has course_offering ID
         const normalised = raw.map((item) => {
-          if (item.course_offering && typeof item.course_offering === "object") {
-            return {
-              id: item.course_offering.id ?? item.course_offering_id,
-              course_name: item.course_offering.course_name ?? item.course_name ?? "",
-              course_code: item.course_offering.course_code ?? item.course_code ?? "",
-              semester: item.course_offering.semester ?? item.semester ?? "",
-              year: item.course_offering.year ?? item.year ?? "",
-              enrolled_count: item.course_offering.enrolled_count ?? 0,
-            };
-          }
-          return item;
+          return {
+            id: item.course_offering, // The API expects course_offering ID, not enrollment ID
+            course_name: item.course_name || "",
+            course_code: item.course_code || "",
+            is_chat_active: item.is_chat_active !== false,
+            semester: item.semester || "",
+            year: item.year || "",
+            enrolled_count: item.enrolled_count || 0,
+            instructor_name: item.instructor_name || "",
+          };
         });
         setCourses(normalised);
       } catch (err) {
