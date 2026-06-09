@@ -114,6 +114,21 @@ const StudentAssignments = () => {
     }
   };
 
+  const handleViewSubmission = async (url) => {
+    if (!url) return;
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error("Failed to fetch file");
+      const blob = await response.blob();
+      window.open(URL.createObjectURL(blob), "_blank");
+    } catch (err) {
+      console.error("Failed to view submission:", err);
+    }
+  };
+
   const filteredAssignments = assignments.filter(
     (a) => a.course_offering === parseInt(selectedCourseId),
   );
@@ -243,16 +258,14 @@ const StudentAssignments = () => {
                     </span>
                   )}
 
-                  {s.file_url && (
-                    <a
-                      href={s.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {s.file_download_url && (
+                    <button
+                      onClick={() => handleViewSubmission(s.file_download_url)}
                       className="flex items-center gap-1.5 text-sm text-[#D67A1E] font-semibold hover:underline"
                     >
                       View
                       <FaArrowRight size={11} />
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
@@ -307,8 +320,8 @@ const StudentAssignments = () => {
                 >
                   <option value="">Choose a course...</option>
                   {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.course_name || c.course?.name || `Course #${c.id}`}
+                    <option key={c.id} value={c.course_offering}>
+                      {c.course_name || `Course #${c.course_offering}`}
                     </option>
                   ))}
                 </select>

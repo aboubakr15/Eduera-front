@@ -52,6 +52,21 @@ const StudentCourseDetails = () => {
     fetchCourse();
   }, [id]);
 
+  const handleViewMaterial = async (url) => {
+    if (!url) return;
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error("Failed to fetch file");
+      const blob = await response.blob();
+      window.open(URL.createObjectURL(blob), "_blank");
+    } catch (err) {
+      console.error("Failed to view material:", err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen">
@@ -211,14 +226,13 @@ const StudentCourseDetails = () => {
                       </div>
                     </div>
                   </div>
-                  <a
-                    href={m.file_download_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-[#D67A1E] font-semibold hover:underline flex-shrink-0 flex items-center gap-1.5"
+                  <button
+                    onClick={() => handleViewMaterial(m.file_download_url)}
+                    disabled={!m.file_download_url}
+                    className="text-sm text-[#D67A1E] font-semibold hover:underline flex-shrink-0 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <FaDownload size={12} /> View
-                  </a>
+                  </button>
                 </div>
               ))
             ) : (

@@ -188,18 +188,7 @@ const StudentCourses = () => {
               </div>
 
               <div className="mt-auto pt-4 border-t border-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${course.progress || 0}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-gray-400">
-                      {course.progress || 0}%
-                    </span>
-                  </div>
+                <div className="flex items-center justify-end">
                   <Link
                     to={`/student/courses/${course.id}`}
                     className="flex items-center gap-2 text-sm text-[#D67A1E] font-semibold hover:gap-3 transition-all duration-200"

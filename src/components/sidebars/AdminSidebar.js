@@ -49,7 +49,7 @@ const managementItems = [
   { label: "Departments", icon: <FaBuilding size={18} /> },
   { label: "Courses", icon: <FaSchool size={18} /> },
   { label: "Course Offerings", icon: <FaSchool size={18} /> },
-  { label: "ChatBot", icon: <FaRobot size={20} /> },
+
 ];
 
 const bottomNavItems = [

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { studentApi } from "../../api/studentApi";
 import {
   FaBook,
@@ -89,7 +88,6 @@ const StudentDashboard = () => {
     profile,
     portal_announcements,
     course_announcements,
-    courses_progress,
     completed_courses_count,
     in_progress_courses_count,
   } = data || {};
@@ -276,55 +274,6 @@ const StudentDashboard = () => {
               />
             ))}
           </div>
-          {/* Course Progress */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-gray-800">
-                Course Progress
-              </h2>
-              <Link
-                to="/student/courses"
-                className="text-sm text-blue-600 hover:underline"
-              >
-                View All
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-1  gap-y-3">
-              {courses_progress?.length > 0 ? (
-                courses_progress.map((course) => (
-                  <div
-                    key={course.id}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="min-w-0 flex-1 mr-4">
-                      <p className="text-md font-medium text-gray-800 truncate">
-                        {course.course_name}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {course.course_code}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="w-80 h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-700 relative overflow-hidden bg-gradient-to-r from-[#D67A1E] via-[#eba968] to-[#e6ae76] shadow-[0_0_12px_rgba(214,122,30,0.4)]"
-                          style={{ width: `${course.progress}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 w-8 text-right">
-                        {course.progress}%
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-400 col-span-2">
-                  No courses in progress
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* Portal Announcements */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
             <div className="flex items-center justify-between mb-1">
