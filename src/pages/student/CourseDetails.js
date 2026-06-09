@@ -97,17 +97,17 @@ const StudentCourseDetails = () => {
             <p className="text-sm text-gray-400">
               {course?.course_code} • {course?.semester} {course?.year}
             </p>
-            {course?.status && (
+            {course?.enrollment_status && (
               <span
                 className={`text-xs px-2 py-0.5 rounded-md font-medium ${
-                  course.status === "Active" || course.status === "In Progress"
+                  course.enrollment_status === "ACTIVE"
                     ? "bg-emerald-50 text-emerald-600"
-                    : course.status === "Completed"
+                    : course.enrollment_status === "COMPLETED"
                       ? "bg-blue-50 text-blue-600"
                       : "bg-gray-100 text-gray-500"
                 }`}
               >
-                {course.status}
+                {course.enrollment_status}
               </span>
             )}
           </div>
@@ -134,9 +134,9 @@ const StudentCourseDetails = () => {
           <div>
             <p className="text-xs text-gray-400">Teaching Assistant</p>
             <p className="text-sm font-bold text-gray-800">
-              {course?.ta_name ||
-                course?.teaching_assistant_name ||
-                "Not Assigned"}
+              {course?.tas_names?.length > 0
+                ? course.tas_names.join(", ")
+                : "Not Assigned"}
             </p>
           </div>
         </div>
@@ -212,7 +212,7 @@ const StudentCourseDetails = () => {
                     </div>
                   </div>
                   <a
-                    href={m.file_url}
+                    href={m.file_download_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-[#D67A1E] font-semibold hover:underline flex-shrink-0 flex items-center gap-1.5"
