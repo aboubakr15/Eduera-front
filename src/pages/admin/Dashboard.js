@@ -387,8 +387,8 @@ function DonutChart({ passed, failed }) {
 }
 
 const StudentsChart = ({ stats }) => {
-  const malePct = stats.gender_distribution?.male_percentage || 50;
-  const femalePct = stats.gender_distribution?.female_percentage || 50;
+  const malePct = stats.gender_distribution?.male_percentage ?? 0;
+  const femalePct = stats.gender_distribution?.female_percentage ?? 0;
   const passed = Math.round(stats.total_students * (malePct / 100));
   const failed = stats.total_students - passed;
   const passedPct = malePct.toFixed(1);
