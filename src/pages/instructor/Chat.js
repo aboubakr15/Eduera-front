@@ -1,20 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { instructorApi } from "../../api/instructorApi";
-import { FaPaperPlane, FaComments, FaBook, FaUsers } from "react-icons/fa";
-import { ArrowLeft } from "lucide-react";
+import { FaPaperPlane, FaComments, FaBook, FaUsers, FaWifi } from "react-icons/fa";
+import { ArrowLeft, WifiOff } from "lucide-react";
 
+/**
+ * Returns a consistent Tailwind bg colour for an avatar based on a name string.
+ */
 const getAvatarColor = (name) => {
   if (!name) return "bg-gray-400";
   const colors = [
-    "bg-blue-500",
-    "bg-emerald-500",
-    "bg-amber-500",
-    "bg-rose-500",
-    "bg-purple-500",
-    "bg-cyan-500",
-    "bg-pink-500",
-    "bg-indigo-500",
+    "bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500",
+    "bg-purple-500", "bg-cyan-500", "bg-pink-500", "bg-indigo-500",
   ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -23,6 +20,9 @@ const getAvatarColor = (name) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
+/**
+ * Instructor course group chat — real-time via WebSocket with HTTP fallback.
+ */
 const InstructorChat = () => {
   const [courses, setCourses] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -30,14 +30,22 @@ const InstructorChat = () => {
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [wsStatus, setWsStatus] = useState("disconnected"); // "connected" | "connecting" | "disconnected"
+
   const messagesEndRef = useRef(null);
+  const wsRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
   const navigate = useNavigate();
 
+  // ── Fetch course list on mount ──────────────────────────────────────────
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const response = await instructorApi.getCourses();
-        setCourses(response.data || []);
+        const data = Array.isArray(response.data)
+          ? response.data
+          : response.data?.results || [];
+        setCourses(data);
       } catch (err) {
         console.error("Failed to fetch courses:", err);
         setCourses([]);
@@ -48,37 +56,118 @@ const InstructorChat = () => {
     fetchCourses();
   }, []);
 
-  useEffect(() => {
-    if (!selectedCourse) return;
+  // ── WebSocket connection ────────────────────────────────────────────────
+  const connectWebSocket = useCallback((course) => {
+    // Close any existing connection
+    if (wsRef.current) {
+      wsRef.current.onclose = null; // prevent reconnect loop
+      wsRef.current.close();
+    }
 
-    const fetchMessages = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    // Determine WS host from current API base URL
+    const apiBase = process.env.REACT_APP_API_URL || window.location.origin;
+    const wsBase = apiBase.replace(/^http/, "ws");
+    const wsUrl = `${wsBase}/ws/course-chat/${course.id}/?token=${token}`;
+
+    setWsStatus("connecting");
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setWsStatus("connected");
+      console.log(`WS connected to course ${course.id}`);
+    };
+
+    ws.onmessage = (event) => {
       try {
-        const response = await instructorApi.getCourseChat(selectedCourse.id);
-        setMessages(response.data || []);
-      } catch (err) {
-        console.error("Failed to fetch messages:", err);
+        const msg = JSON.parse(event.data);
+        setMessages((prev) => {
+          // Avoid duplicate messages
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      } catch (e) {
+        console.error("WS message parse error:", e);
       }
     };
 
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
-    return () => clearInterval(interval);
-  }, [selectedCourse]);
+    ws.onerror = () => {
+      setWsStatus("disconnected");
+    };
 
+    ws.onclose = () => {
+      setWsStatus("disconnected");
+      // Auto-reconnect after 3 s if the course is still selected
+      reconnectTimerRef.current = setTimeout(() => {
+        if (wsRef.current === ws) {
+          console.log("WS reconnecting...");
+          connectWebSocket(course);
+        }
+      }, 3000);
+    };
+  }, []);
+
+  // ── Load initial messages + open WS when course changes ────────────────
+  useEffect(() => {
+    if (!selectedCourse) return;
+
+    // Clear previous reconnect timer
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+    }
+
+    // Load initial messages via HTTP
+    const loadMessages = async () => {
+      try {
+        const res = await instructorApi.getCourseChat(selectedCourse.id);
+        setMessages(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        setMessages([]);
+      }
+    };
+    loadMessages();
+
+    // Open WebSocket
+    connectWebSocket(selectedCourse);
+
+    return () => {
+      // Clean up WS and reconnect timer when switching courses
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      setWsStatus("disconnected");
+    };
+  }, [selectedCourse, connectWebSocket]);
+
+  // ── Auto-scroll to latest message ──────────────────────────────────────
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // ── Send message ────────────────────────────────────────────────────────
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedCourse) return;
 
+    const content = newMessage.trim();
+    setNewMessage("");
     setSending(true);
+
     try {
-      const response = await instructorApi.sendCourseMessage(
-        selectedCourse.id,
-        {
-          content: newMessage.trim(),
-        },
-      );
-      setMessages((prev) => [response.data, ...prev]);
-      setNewMessage("");
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        // Send via WebSocket — the consumer will broadcast it back
+        wsRef.current.send(JSON.stringify({ content }));
+      } else {
+        // HTTP fallback
+        const res = await instructorApi.sendCourseMessage(selectedCourse.id, { content });
+        setMessages((prev) => [...prev, res.data]);
+      }
     } catch (err) {
       console.error("Failed to send:", err);
     } finally {
@@ -86,9 +175,8 @@ const InstructorChat = () => {
     }
   };
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  const currentUserId = localStorage.getItem("user_id") || localStorage.getItem("userId");
 
   if (loading) {
     return (
@@ -100,6 +188,7 @@ const InstructorChat = () => {
 
   return (
     <div className="flex-1 flex overflow-hidden min-h-screen bg-[#f9fafb]">
+      {/* ── Sidebar ── */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 shadow-sm">
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-3 mb-1">
@@ -107,19 +196,14 @@ const InstructorChat = () => {
               onClick={() => navigate(-1)}
               className="flex items-center text-gray-400 hover:text-[#323d6d] transition-all group"
             >
-              <ArrowLeft
-                size={20}
-                className="transition-transform group-hover:-translate-x-1"
-              />
+              <ArrowLeft size={20} className="transition-transform group-hover:-translate-x-1" />
             </button>
             <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2">
               <FaComments size={16} className="text-[#D67A1E]" />
               Course Chats
             </h1>
           </div>
-          <p className="text-xs text-gray-400 ml-8">
-            {courses.length} active courses
-          </p>
+          <p className="text-xs text-gray-400 ml-8">{courses.length} active courses</p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -131,28 +215,18 @@ const InstructorChat = () => {
                   key={course.id}
                   onClick={() => setSelectedCourse(course)}
                   className={`w-full text-left p-3 rounded-xl flex items-start gap-3 transition-all duration-200 ${
-                    isActive
-                      ? "bg-[#29335d] text-white shadow-lg"
-                      : "hover:bg-gray-100 text-gray-800"
+                    isActive ? "bg-[#29335d] text-white shadow-lg" : "hover:bg-gray-100 text-gray-800"
                   }`}
                 >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? "bg-white/20 text-white" : "bg-orange-50 text-[#D67A1E]"}`}
-                  >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? "bg-white/20 text-white" : "bg-orange-50 text-[#D67A1E]"}`}>
                     <FaBook size={12} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">
-                      {course.course_name}
-                    </p>
-                    <p
-                      className={`text-xs truncate mt-0.5 ${isActive ? "text-gray-300" : "text-gray-500"}`}
-                    >
+                    <p className="text-sm font-semibold truncate">{course.course_name}</p>
+                    <p className={`text-xs truncate mt-0.5 ${isActive ? "text-gray-300" : "text-gray-500"}`}>
                       {course.course_code} • {course.semester} {course.year}
                     </p>
-                    <p
-                      className={`text-xs truncate mt-1 ${isActive ? "text-gray-400" : "text-gray-400"}`}
-                    >
+                    <p className={`text-xs truncate mt-1 ${isActive ? "text-gray-400" : "text-gray-400"}`}>
                       {course.enrolled_count || 0} students
                     </p>
                   </div>
@@ -165,15 +239,13 @@ const InstructorChat = () => {
                 <FaComments size={24} className="text-gray-300" />
               </div>
               <p className="text-sm font-medium text-gray-500">No Courses</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Assign courses to see group chats here.
-              </p>
+              <p className="text-xs text-gray-400 mt-1">Assign courses to see group chats here.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Main Chat Area */}
+      {/* ── Main Chat Area ── */}
       <div className="flex-1 flex flex-col">
         {selectedCourse ? (
           <>
@@ -183,13 +255,26 @@ const InstructorChat = () => {
                 <FaBook size={16} className="text-[#D67A1E]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800 truncate">
-                  {selectedCourse.course_name}
-                </p>
+                <p className="text-sm font-bold text-gray-800 truncate">{selectedCourse.course_name}</p>
                 <p className="text-xs text-gray-400">
-                  {selectedCourse.course_code} • {selectedCourse.semester}{" "}
-                  {selectedCourse.year}
+                  {selectedCourse.course_code} • {selectedCourse.semester} {selectedCourse.year}
                 </p>
+              </div>
+              {/* Connection indicator */}
+              <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${
+                wsStatus === "connected"
+                  ? "bg-emerald-50 text-emerald-600"
+                  : wsStatus === "connecting"
+                  ? "bg-amber-50 text-amber-600"
+                  : "bg-gray-100 text-gray-500"
+              }`}>
+                {wsStatus === "connected" ? (
+                  <><FaWifi size={10} /> Live</>
+                ) : wsStatus === "connecting" ? (
+                  <><div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" /> Connecting...</>
+                ) : (
+                  <><WifiOff size={10} /> Offline</>
+                )}
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <FaUsers size={14} className="text-gray-400" />
@@ -203,53 +288,28 @@ const InstructorChat = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.length > 0 ? (
                 messages.map((msg, index) => {
-                  const isInstructor = msg.sender_role === "INSTRUCTOR";
-                  const senderName =
-                    msg.sender_name ||
-                    msg.full_name ||
-                    msg.student_name ||
-                    "User";
-                  const showLabel =
-                    index === 0 ||
-                    messages[index - 1]?.sender_id !== msg.sender_id;
+                  const isMe = String(msg.sender_id) === String(currentUserId);
+                  const senderName = msg.sender_name || "User";
+                  const showLabel = index === 0 || messages[index - 1]?.sender_id !== msg.sender_id;
 
                   return (
-                    <div
-                      key={msg.id}
-                      className={`flex ${isInstructor ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-7 mr-2 text-white font-bold text-xs ${
-                          isInstructor
-                            ? "bg-[#1B2036]"
-                            : getAvatarColor(senderName)
-                        }`}
-                      >
-                        {senderName?.charAt(0)}
-                      </div>
-                      <div
-                        className={`max-w-[70%] flex flex-col ${isInstructor ? "items-end" : "items-start"}`}
-                      >
+                    <div key={msg.id || index} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                      {!isMe && (
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-7 mr-2 text-white font-bold text-xs ${getAvatarColor(senderName)}`}>
+                          {senderName?.charAt(0)}
+                        </div>
+                      )}
+                      <div className={`max-w-[70%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                         {showLabel && (
-                          <p
-                            className={`text-[11px] font-semibold mb-1 px-1 ${isInstructor ? "text-right text-[#D67A1E]" : "text-gray-500"}`}
-                          >
-                            {isInstructor ? "Me" : senderName?.split(" ")[0]}
+                          <p className={`text-[11px] font-semibold mb-1 px-1 ${isMe ? "text-right text-[#D67A1E]" : "text-gray-500"}`}>
+                            {isMe ? "Me" : senderName?.split(" ")[0]}
                           </p>
                         )}
-                        <div
-                          className={`px-4 py-2.5 shadow-sm ${isInstructor ? "bg-[#1B2036] text-white rounded-2xl rounded-br-sm" : "bg-white text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100"}`}
-                        >
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                            {msg.content}
-                          </p>
+                        <div className={`px-4 py-2.5 shadow-sm ${isMe ? "bg-[#1B2036] text-white rounded-2xl rounded-br-sm" : "bg-white text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100"}`}>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
                         </div>
-                        <p
-                          className={`text-[10px] mt-1 px-1 text-gray-400 ${isInstructor ? "text-right" : ""}`}
-                        >
-                          {new Date(
-                            msg.created_at || msg.timestamp,
-                          ).toLocaleTimeString("en-US", {
+                        <p className={`text-[10px] mt-1 px-1 text-gray-400 ${isMe ? "text-right" : ""}`}>
+                          {new Date(msg.created_at || msg.timestamp).toLocaleTimeString("en-US", {
                             hour: "numeric",
                             minute: "2-digit",
                           })}
@@ -264,12 +324,8 @@ const InstructorChat = () => {
                     <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
                       <FaComments size={24} className="text-gray-300" />
                     </div>
-                    <p className="text-sm font-medium text-gray-500">
-                      No messages yet
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Start the conversation by saying hello
-                    </p>
+                    <p className="text-sm font-medium text-gray-500">No messages yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Start the conversation by saying hello</p>
                   </div>
                 </div>
               )}
@@ -278,10 +334,7 @@ const InstructorChat = () => {
 
             {/* Input */}
             <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-              <form
-                onSubmit={handleSendMessage}
-                className="flex items-center gap-3"
-              >
+              <form onSubmit={handleSendMessage} className="flex items-center gap-3">
                 <input
                   type="text"
                   value={newMessage}

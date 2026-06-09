@@ -49,7 +49,8 @@ const InstructorSubmissions = () => {
     setGradeError(null);
     setGradeSuccess(null);
     try {
-      await instructorApi.gradeSubmission(selectedSubmission.id, gradeData);
+      const response = await instructorApi.gradeSubmission(selectedSubmission.id, gradeData);
+      // Update the local submissions list with the new grade data
       setSubmissions(
         submissions.map((s) =>
           s.id === selectedSubmission.id
@@ -71,12 +72,19 @@ const InstructorSubmissions = () => {
       }, 1000);
     } catch (err) {
       console.error("Failed to grade:", err);
-      const errorMsg =
-        err.response?.data?.grade?.[0] ||
-        err.response?.data?.detail ||
-        err.response?.data?.error ||
-        "Failed to submit grade. Please check the grade value.";
-      setGradeError(errorMsg);
+      // Only show error if the request actually failed (non-2xx)
+      if (err.response) {
+        const data = err.response.data;
+        const errorMsg =
+          (Array.isArray(data?.grade) ? data.grade[0] : null) ||
+          data?.detail ||
+          data?.error ||
+          data?.message ||
+          "Failed to submit grade. Please check the grade value.";
+        setGradeError(errorMsg);
+      } else {
+        setGradeError("Network error. Please try again.");
+      }
     } finally {
       setGrading(false);
     }
