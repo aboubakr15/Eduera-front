@@ -242,12 +242,12 @@ const InstructorAssignments = () => {
                 <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
                   {parseInt(a.total_points)} Points
                 </span>
-                <Link
-                  to={`/instructor/assignments/${a.id}`}
+                <button
+                  onClick={() => navigate(`/instructor/submissions?assignment_id=${a.id}`)}
                   className="flex items-center gap-1.5 text-sm text-[#D67A1E] font-semibold hover:underline"
                 >
                   View
-                </Link>
+                </button>
                 <button
                   onClick={() => openDeleteModal(a)}
                   className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"

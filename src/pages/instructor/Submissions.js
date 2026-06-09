@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { instructorApi } from "../../api/instructorApi";
-import api from "../../api/axios";
 import {
   FaCheck,
   FaFileAlt,
@@ -23,11 +22,15 @@ const InstructorSubmissions = () => {
   const [page, setPage] = useState(1);
   const perPage = 8;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const assignmentId = searchParams.get("assignment_id");
 
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const response = await instructorApi.getSubmissions();
+        const params = {};
+        if (assignmentId) params.assignment_id = assignmentId;
+        const response = await instructorApi.getSubmissions(params);
         setSubmissions(response.data);
       } catch (err) {
         console.error("Failed to fetch:", err);
@@ -36,7 +39,7 @@ const InstructorSubmissions = () => {
       }
     };
     fetchSubmissions();
-  }, []);
+  }, [assignmentId]);
 
   const handleGrade = async (e) => {
     e.preventDefault();
@@ -258,9 +261,9 @@ const InstructorSubmissions = () => {
                   </td>
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-2">
-                      {s.file_url && (
+                      {s.file_download_url && (
                         <button
-                          onClick={() => handleViewFile(s.file_url)}
+                          onClick={() => handleViewFile(s.file_download_url)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-100 rounded-lg hover:bg-gray-100 transition-colors"
                         >
                           <FaFileAlt size={11} />
