@@ -141,17 +141,27 @@ const Instructors = () => {
     const payload = {
       username: form.username || form.email.split("@")[0],
       email: form.email,
-      password: form.password,
       full_name: form.full_name,
-      department: parseInt(form.department) || 1,
+      department: form.department ? parseInt(form.department) : null,
     };
 
+    if (form.password) payload.password = form.password;
+
     try {
-      const response = await adminApi.createInstructor(payload);
-      setInstructors((prev) => [...prev, response.data]);
+      if (editingInstructor) {
+        const response = await adminApi.updateUser(editingInstructor.id, payload);
+        setInstructors((prev) =>
+          prev.map((i) =>
+            i.id === editingInstructor.id ? { ...i, ...response.data } : i,
+          ),
+        );
+      } else {
+        const response = await adminApi.createInstructor(payload);
+        setInstructors((prev) => [...prev, response.data]);
+      }
       setShowModal(false);
     } catch (error) {
-      console.error("Failed to create instructor:", error);
+      console.error("Failed to save instructor:", error);
     }
   };
 

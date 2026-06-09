@@ -140,19 +140,28 @@ const TA = () => {
     const payload = {
       username: form.username || form.email.split("@")[0],
       email: form.email,
-      password: form.password,
       full_name: form.full_name,
-      department: parseInt(form.department) || 1,
+      department: form.department ? parseInt(form.department) : null,
     };
 
+    if (form.password) payload.password = form.password;
+
     try {
-      const response = await adminApi.createTA(payload);
-      setTAs((prev) => [...prev, response.data]);
+      if (editingTA) {
+        const response = await adminApi.updateUser(editingTA.id, payload);
+        setTAs((prev) =>
+          prev.map((t) =>
+            t.id === editingTA.id ? { ...t, ...response.data } : t,
+          ),
+        );
+      } else {
+        const response = await adminApi.createTA(payload);
+        setTAs((prev) => [...prev, response.data]);
+      }
       setShowModal(false);
     } catch (error) {
-      console.error("Failed to create TA:", error);
+      console.error("Failed to save TA:", error);
     }
-    setShowModal(false);
   };
 
   const pageIds = paginated.map((s) => s.id);

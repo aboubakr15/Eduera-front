@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import {
   FaSearch,
-  FaEdit,
   FaChevronLeft,
   FaChevronRight,
   FaChevronDown,
   FaUserGraduate,
+  FaBookOpen,
+  FaTrash,
+  FaPlus,
 } from "react-icons/fa";
 import { adminApi } from "../../api/adminApi";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+
 const Students = () => {
   const [students, setStudents] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -19,10 +22,18 @@ const Students = () => {
   const [department, setDepartment] = useState("All");
   const [page, setPage] = useState(1);
 
+  const [enrollmentModal, setEnrollmentModal] = useState(null);
+  const [enrollments, setEnrollments] = useState([]);
+  const [courseOfferings, setCourseOfferings] = useState([]);
+  const [selectedOffering, setSelectedOffering] = useState("");
+  const [enrollLoading, setEnrollLoading] = useState(false);
+  const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
+
   const perPage = 8;
 
   useEffect(() => {
     fetchData();
+    fetchCourseOfferings();
   }, [search, department]);
 
   const fetchData = async () => {
@@ -38,6 +49,60 @@ const Students = () => {
       console.error("Failed to fetch data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCourseOfferings = async () => {
+    try {
+      const res = await adminApi.getCourseOfferings();
+      setCourseOfferings(res.data);
+    } catch (error) {
+      console.error("Failed to fetch course offerings:", error);
+    }
+  };
+
+  const fetchEnrollments = async (studentId) => {
+    try {
+      setEnrollmentsLoading(true);
+      const res = await adminApi.getEnrollments({ student: studentId });
+      setEnrollments(res.data);
+    } catch (error) {
+      console.error("Failed to fetch enrollments:", error);
+    } finally {
+      setEnrollmentsLoading(false);
+    }
+  };
+
+  const openEnrollmentModal = (student) => {
+    setEnrollmentModal(student);
+    setSelectedOffering("");
+    fetchEnrollments(student.id);
+  };
+
+  const handleEnroll = async () => {
+    if (!selectedOffering || !enrollmentModal) return;
+    try {
+      setEnrollLoading(true);
+      const res = await adminApi.createEnrollment({
+        student: enrollmentModal.id,
+        course_offering: parseInt(selectedOffering),
+        status: "ACTIVE",
+      });
+      setEnrollments((prev) => [...prev, res.data]);
+      setSelectedOffering("");
+    } catch (error) {
+      console.error("Failed to enroll student:", error);
+    } finally {
+      setEnrollLoading(false);
+    }
+  };
+
+  const handleUnenroll = async (enrollmentId) => {
+    try {
+      await adminApi.deleteEnrollment(enrollmentId);
+      setEnrollments((prev) => prev.filter((e) => e.id !== enrollmentId));
+    } catch (error) {
+      console.error("Failed to unenroll student:", error);
     }
   };
 
@@ -85,6 +150,7 @@ const Students = () => {
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
   const navigate = useNavigate();
+
   return (
     <div className="min-h-screen font-sans">
       <div className="px-4 pt-4 pb-6 flex items-center gap-4">
@@ -173,12 +239,15 @@ const Students = () => {
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
                 Department
               </th>
+              <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right pr-6">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="text-center py-16 text-gray-300">
+                <td colSpan={7} className="text-center py-16 text-gray-300">
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
                     <p className="text-sm">Loading students...</p>
@@ -187,7 +256,7 @@ const Students = () => {
               </tr>
             ) : paginated.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-16 text-gray-300">
+                <td colSpan={7} className="text-center py-16 text-gray-300">
                   <FaUserGraduate
                     size={32}
                     className="mx-auto mb-3 opacity-30"
@@ -238,6 +307,15 @@ const Students = () => {
                         student.department_id || student.department,
                       )}
                     </td>
+                    <td className="py-3 pr-6 text-right">
+                      <button
+                        onClick={() => openEnrollmentModal(student)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition-colors"
+                      >
+                        <FaBookOpen size={12} />
+                        Enrollments
+                      </button>
+                    </td>
                   </tr>
                 );
               })
@@ -275,6 +353,122 @@ const Students = () => {
           </button>
         </div>
       </div>
+
+      {/* Enrollment Modal */}
+      {enrollmentModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Enrollments
+                </h2>
+                <p className="text-sm text-gray-400">
+                  {enrollmentModal.full_name} ({enrollmentModal.student_id || enrollmentModal.id})
+                </p>
+              </div>
+              <button
+                onClick={() => setEnrollmentModal(null)}
+                className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Current Enrollments */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Current Enrollments
+              </h3>
+              {enrollmentsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-5 h-5 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                </div>
+              ) : enrollments.length === 0 ? (
+                <p className="text-sm text-gray-300 text-center py-8">
+                  No enrollments found
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {enrollments.map((enr) => (
+                    <div
+                      key={enr.id}
+                      className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {enr.course_offering_details?.course_name || "Course"}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {enr.course_offering_details?.course_code} &middot;{" "}
+                          {enr.course_offering_details?.semester}{" "}
+                          {enr.course_offering_details?.year}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                            enr.status === "ACTIVE"
+                              ? "bg-green-50 text-green-600"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {enr.status}
+                        </span>
+                        <button
+                          onClick={() => handleUnenroll(enr.id)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <FaTrash size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add Enrollment */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Enroll in Course Offering
+              </h3>
+              <div className="flex items-end gap-3">
+                <div className="flex-1 relative">
+                  <select
+                    value={selectedOffering}
+                    onChange={(e) => setSelectedOffering(e.target.value)}
+                    className="w-full appearance-none border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                  >
+                    <option value="">-- Select Course Offering --</option>
+                    {courseOfferings.map((co) => (
+                      <option key={co.id} value={co.id}>
+                        {co.course_details?.code} - {co.course_details?.name} ({co.semester} {co.year})
+                      </option>
+                    ))}
+                  </select>
+                  <FaChevronDown
+                    size={11}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                </div>
+                <button
+                  onClick={handleEnroll}
+                  disabled={!selectedOffering || enrollLoading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#D67A1E] text-white text-sm font-semibold hover:bg-[#af6b26] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {enrollLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <FaPlus size={11} />
+                  )}
+                  Enroll
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

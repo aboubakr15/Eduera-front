@@ -14,6 +14,7 @@ export const adminApi = {
   deleteCourseOffering: (id) => api.delete(`/admin/course-offerings/${id}/`),
    
   getUsers: (role) => api.get('/admin/users/', { params: { role } }),
+  updateUser: (id, data) => api.patch(`/admin/users/${id}/`, data),
   createInstructor: (data) => api.post('/admin/users/instructors/', data),
   createTA: (data) => api.post('/admin/users/tas/', data),
    
@@ -44,4 +45,8 @@ export const adminApi = {
   createDepartment: (data) => api.post('/admin/departments/', data),
   updateDepartment: (id, data) => api.patch(`/admin/departments/${id}/`, data),
   deleteDepartment: (id) => api.delete(`/admin/departments/${id}/`),
+
+  getEnrollments: (params) => api.get('/admin/enrollments/', { params }),
+  createEnrollment: (data) => api.post('/admin/enrollments/', data),
+  deleteEnrollment: (id) => api.delete(`/admin/enrollments/${id}/`),
 };

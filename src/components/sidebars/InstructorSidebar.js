@@ -58,7 +58,6 @@ const managementItems = [
   { label: "Announcements", icon: <MdAnnouncement size={18} /> },
   { label: "Chat", icon: <MdChat size={20} /> },
   { label: "ChatBot", icon: <FaRobot size={18} /> },
-  { label: "UploadCenter", icon: <FaRobot size={18} /> },
 ];
 
 const InstructorSidebar = () => {
