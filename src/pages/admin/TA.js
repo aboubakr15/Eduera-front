@@ -104,9 +104,14 @@ const TA = () => {
     setConfirmDelete(ta);
   };
 
-  const confirmDeleteTA = () => {
-    setTAs((prev) => prev.filter((s) => s.id !== confirmDelete.id));
-    setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+  const confirmDeleteTA = async () => {
+    try {
+      await adminApi.updateUser(confirmDelete.id, { is_active: false });
+      setTAs((prev) => prev.filter((s) => s.id !== confirmDelete.id));
+      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+    } catch (error) {
+      console.error("Failed to delete TA:", error);
+    }
     setConfirmDelete(null);
   };
 

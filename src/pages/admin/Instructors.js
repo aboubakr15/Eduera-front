@@ -105,9 +105,14 @@ const Instructors = () => {
     setConfirmDelete(instructor);
   };
 
-  const confirmDeleteInstructor = () => {
-    setInstructors((prev) => prev.filter((s) => s.id !== confirmDelete.id));
-    setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+  const confirmDeleteInstructor = async () => {
+    try {
+      await adminApi.updateUser(confirmDelete.id, { is_active: false });
+      setInstructors((prev) => prev.filter((s) => s.id !== confirmDelete.id));
+      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
+    } catch (error) {
+      console.error("Failed to delete instructor:", error);
+    }
     setConfirmDelete(null);
   };
 

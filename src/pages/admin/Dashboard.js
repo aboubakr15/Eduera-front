@@ -430,10 +430,11 @@ function AnnouncementsSection() {
   const [announcements, setAnnouncements] = useState([]);
   const [showNewForm, setShowNewForm] = useState(false);
   const [newContent, setNewContent] = useState("");
+  const [loading, setLoading] = useState(true);
   const [, setTick] = useState(0);
 
   const timeAgo = (timestamp) => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
     if (seconds < 60) return "Just now";
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes} min ago`;
@@ -444,21 +445,38 @@ function AnnouncementsSection() {
   };
 
   useEffect(() => {
+    const fetch = async () => {
+      try {
+        const res = await adminApi.getAnnouncements();
+        setAnnouncements(res.data);
+      } catch (err) {
+        console.error("Failed to fetch announcements:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => setTick((t) => t + 1), 60000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newContent.trim()) return;
-    const newAnnouncement = {
-      id: Date.now(),
-      content: newContent.trim(),
-      createdAt: Date.now(),
-      author: "Admin",
-    };
-    setAnnouncements((prev) => [newAnnouncement, ...prev]);
-    setNewContent("");
-    setShowNewForm(false);
+    try {
+      const res = await adminApi.createAnnouncement({
+        title: "General Announcement",
+        content: newContent.trim(),
+        is_global: true,
+      });
+      setAnnouncements((prev) => [res.data, ...prev]);
+      setNewContent("");
+      setShowNewForm(false);
+    } catch (err) {
+      console.error("Failed to create announcement:", err);
+    }
   };
 
   const handleCancel = () => {
@@ -509,7 +527,11 @@ function AnnouncementsSection() {
         </div>
       )}
 
-      {announcements.length === 0 && !showNewForm ? (
+      {loading ? (
+        <div className="text-center py-8">
+          <p className="text-sm text-gray-400">Loading announcements...</p>
+        </div>
+      ) : announcements.length === 0 && !showNewForm ? (
         <div className="text-center py-8">
           <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
             <FaBullhorn size={18} className="text-gray-300" />
@@ -535,11 +557,11 @@ function AnnouncementsSection() {
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-xs font-medium text-gray-500">
-                    {announcement.author}
+                    {announcement.author_name}
                   </span>
                   <span className="text-xs text-gray-300">•</span>
                   <span className="text-xs text-gray-400">
-                    {timeAgo(announcement.createdAt)}
+                    {timeAgo(announcement.created_at)}
                   </span>
                 </div>
               </div>
