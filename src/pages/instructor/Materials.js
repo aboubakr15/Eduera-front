@@ -9,8 +9,10 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { instructorApi } from "../../api/instructorApi";
+import { useAuth } from "../../context/AuthContext";
 
 const InstructorMaterials = () => {
+  const { user } = useAuth();
   const [materials, setMaterials] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -472,10 +474,19 @@ const InstructorMaterials = () => {
                   }
                   className="w-full text-sm border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 bg-gray-50/50"
                 >
-                  <option value="LECTURE">Lecture</option>
-                  <option value="SECTION">Section</option>
-                  <option value="ASSIGNMENT_DESC">Assignment</option>
-                  <option value="OTHER">Other</option>
+                  {user?.primary_role?.toUpperCase() === "TA" ? (
+                    <>
+                      <option value="SECTION">Section</option>
+                      <option value="ASSIGNMENT_DESC">Assignment</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="LECTURE">Lecture</option>
+                      <option value="SECTION">Section</option>
+                      <option value="ASSIGNMENT_DESC">Assignment</option>
+                      <option value="OTHER">Other</option>
+                    </>
+                  )}
                 </select>
               </div>
 

@@ -112,7 +112,35 @@ const Topbar = ({ user, role = "instructor" }) => {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const userName = user?.name || user?.email?.split("@")[0] || "User";
+  const { user: authUser } = useAuth();
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    if (!authUser) return;
+    const fetchProfile = async () => {
+      try {
+        if (role === "student") {
+          const { studentApi } = await import("../api/studentApi");
+          const res = await studentApi.getProfile();
+          setProfile(res.data);
+        } else if (role === "admin") {
+          const { adminApi } = await import("../api/adminApi");
+          const res = await adminApi.getProfile();
+          setProfile(res.data);
+        } else {
+          const { instructorApi } = await import("../api/instructorApi");
+          const res = await instructorApi.getProfile();
+          setProfile(res.data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch profile in Topbar:", e);
+      }
+    };
+    fetchProfile();
+  }, [role, authUser]);
+
+  const userName = profile?.full_name || authUser?.name || authUser?.email?.split("@")[0] || "User";
+  const userAvatar = profile?.profile_picture_url || authUser?.avatar || Avatar;
   const userRole =
     role === "student"
       ? "Student"
@@ -215,10 +243,16 @@ const Topbar = ({ user, role = "instructor" }) => {
 
         <div
           className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-xl transition-colors"
-          onClick={() => navigate(`${basePath}/account`)}
+          onClick={() => {
+            if (basePath === "/student") {
+              navigate("/student/profile");
+            } else {
+              navigate(`${basePath}/account`);
+            }
+          }}
         >
           <img
-            src={user?.avatar || Avatar}
+            src={userAvatar}
             className="w-8 h-8 rounded-full object-cover cursor-pointer"
             alt="user"
           />
