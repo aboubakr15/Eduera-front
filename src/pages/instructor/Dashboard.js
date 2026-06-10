@@ -11,7 +11,6 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import Img from "../../assets/images/instructor.png";
-import Avatar from "../../assets/images/man.png";
 import { useNavigate } from "react-router-dom";
 
 function StatCard({ label, value, color, bg, onClick }) {
@@ -38,6 +37,7 @@ function StatCard({ label, value, color, bg, onClick }) {
 const InstructorDashboard = () => {
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -50,14 +50,24 @@ const InstructorDashboard = () => {
       } catch (err) {
         console.error("Failed to fetch dashboard:", err);
         setError("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
       }
     };
-    fetchDashboard();
+    
+    const fetchProfile = async () => {
+      try {
+        const res = await instructorApi.getProfile();
+        setProfile(res.data);
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      }
+    };
+
+    Promise.all([fetchDashboard(), fetchProfile()]).finally(() => {
+      setLoading(false);
+    });
   }, []);
 
-  const userName = user?.name || user?.email?.split("@")[0] || "Instructor";
+  const userName = profile?.full_name || user?.name || user?.email?.split("@")[0] || "Instructor";
 
   if (loading) {
     return (
@@ -284,12 +294,18 @@ const InstructorDashboard = () => {
 
         <div className="hidden lg:flex w-80 flex-col gap-4 p-4 overflow-y-auto border-l border-gray-100 bg-white">
           <div className="bg-gray-50 rounded-2xl p-5 shadow-sm border border-gray-100 text-center">
-            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
-              <img
-                src={user?.avatar || Avatar}
-                className="w-20 h-20 rounded-full object-cover cursor-pointer"
-                alt="user"
-              />
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3 overflow-hidden">
+              {profile?.profile_picture_url ? (
+                <img
+                  src={profile.profile_picture_url}
+                  className="w-full h-full object-cover cursor-pointer"
+                  alt="user"
+                />
+              ) : (
+                <span className="text-3xl font-bold text-blue-500">
+                  {(profile?.full_name || userName || "I").charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
             <h3 className="text-base font-bold text-gray-800">
               Dr. {userName}

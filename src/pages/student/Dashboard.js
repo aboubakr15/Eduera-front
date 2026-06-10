@@ -16,7 +16,6 @@ import {
   FaGraduationCap,
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
-import Avatar from "../../assets/images/man.png";
 import { useNavigate, Link } from "react-router-dom";
 import stuImg from "../../assets/images/stu.png";
 import botImg from "../../assets/images/bot.png";
@@ -369,12 +368,18 @@ const StudentDashboard = () => {
         {/* Right Sidebar */}
         <div className="hidden lg:flex w-80 flex-col gap-4 p-4 overflow-y-auto border-l border-gray-100 bg-white portal-scroll">
           <div className="bg-gray-50 rounded-2xl p-5 shadow-sm border border-gray-100 text-center">
-            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
-              <img
-                src={user?.avatar || Avatar}
-                className="w-20 h-20 rounded-full object-cover cursor-pointer"
-                alt="user"
-              />
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3 overflow-hidden">
+              {profile?.profile_picture_url ? (
+                <img
+                  src={profile.profile_picture_url}
+                  className="w-full h-full object-cover cursor-pointer"
+                  alt="user"
+                />
+              ) : (
+                <span className="text-3xl font-bold text-blue-500">
+                  {(profile?.full_name || userName || "U").charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
             <h3 className="text-base font-bold text-gray-800">
               {profile?.full_name || userName}

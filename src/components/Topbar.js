@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
-import Avatar from "../assets/images/man.png";
 
 const instructorNotifications = [
   {
@@ -141,7 +140,7 @@ const Topbar = ({ user, role = "instructor" }) => {
   }, [role, authUser]);
 
   const userName = profile?.full_name || authUser?.name || authUser?.email?.split("@")[0] || "User";
-  const userAvatar = profile?.profile_picture_url || authUser?.avatar || Avatar;
+  const userAvatar = profile?.profile_picture_url || authUser?.avatar || null;
   const userRole =
     role === "student"
       ? "Student"
@@ -252,11 +251,19 @@ const Topbar = ({ user, role = "instructor" }) => {
             }
           }}
         >
-          <img
-            src={userAvatar}
-            className="w-8 h-8 rounded-full object-cover cursor-pointer"
-            alt="user"
-          />
+          {userAvatar ? (
+            <img
+              src={userAvatar}
+              className="w-8 h-8 rounded-full object-cover cursor-pointer"
+              alt="user"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 overflow-hidden">
+              <span className="text-sm font-bold">
+                {userName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
           <div className="hidden sm:block">
             <p className="text-sm font-semibold text-gray-800">{userName}</p>
             <p className="text-xs text-gray-400">{userRole}</p>
