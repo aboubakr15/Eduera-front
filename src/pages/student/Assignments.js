@@ -258,12 +258,20 @@ const StudentAssignments = () => {
                     </span>
                   )}
 
+                  {s.assignment_file_download_url && (
+                    <button
+                      onClick={() => handleViewSubmission(s.assignment_file_download_url)}
+                      className="flex items-center gap-1.5 text-sm text-blue-600 font-semibold hover:underline mr-2"
+                    >
+                      <FaDownload size={11} /> Assignment
+                    </button>
+                  )}
                   {s.file_download_url && (
                     <button
                       onClick={() => handleViewSubmission(s.file_download_url)}
                       className="flex items-center gap-1.5 text-sm text-[#D67A1E] font-semibold hover:underline"
                     >
-                      View
+                      Submission
                       <FaArrowRight size={11} />
                     </button>
                   )}

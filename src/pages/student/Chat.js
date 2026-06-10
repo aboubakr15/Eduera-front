@@ -98,8 +98,15 @@ const StudentChat = () => {
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
-    ws.onopen = () => {
+    ws.onopen = async () => {
       setWsStatus("connected");
+      console.log(`WS connected to course ${course.id}`);
+      try {
+        const res = await studentApi.getCourseChat(course.id);
+        setMessages(Array.isArray(res.data) ? res.data : []);
+      } catch (e) {
+        console.error("Failed to sync messages after reconnect", e);
+      }
     };
 
     ws.onmessage = (event) => {
