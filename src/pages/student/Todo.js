@@ -64,7 +64,14 @@ const StudentTodo = () => {
     if (!newTodo.title.trim()) return;
     setSubmitting(true);
     try {
-      const response = await studentApi.createTodo(newTodo);
+      const payload = { ...newTodo };
+      if (!payload.due_date) {
+        payload.due_date = null;
+      }
+      if (!payload.course) {
+        payload.course = null;
+      }
+      const response = await studentApi.createTodo(payload);
       if (response.data) {
         setTodos([response.data, ...todos]);
       }

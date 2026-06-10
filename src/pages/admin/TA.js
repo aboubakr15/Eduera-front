@@ -280,39 +280,7 @@ const TA = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="text-center py-16 text-gray-300">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
-                    <p className="text-sm">Loading TAs...</p>
-                  </div>
-                </td>
-              </tr>
-            ) : paginated.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="text-center py-16 text-gray-300">
-                  <FaUserGraduate
-                    size={32}
-                    className="mx-auto mb-3 opacity-30"
-                  />
-                  <p className="text-sm">No teaching assistants found</p>
-                </td>
-              </tr>
-            ) : (
-              paginated.map((ta) => (
-                <tr
-                  key={ta.id}
-                  className={`border-b border-gray-100 transition-colors hover:bg-gray-50 ${
-                    selected.includes(ta.id) ? "bg-blue-50" : ""
-                  }`}
-                >
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(ta.id)}
-                      onChange={() => toggleSelect(ta.id)}
-                      className="w-4 h-4 rounded accent-blue-500 cursor-pointer"
-                    />
-                  </td>
+                
                   <td className="py-3 pl-2">
                     <img
                       src={

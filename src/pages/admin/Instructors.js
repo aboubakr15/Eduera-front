@@ -281,36 +281,7 @@ const Instructors = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="text-center py-16 text-gray-300">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
-                    <p className="text-sm">Loading instructors...</p>
-                  </div>
-                </td>
-              </tr>
-            ) : paginated.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="text-center py-16 text-gray-300">
-                  <FaUserTie size={32} className="mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No instructors found</p>
-                </td>
-              </tr>
-            ) : (
-              paginated.map((instructor) => (
-                <tr
-                  key={instructor.id}
-                  className={`border-b border-gray-100 transition-colors hover:bg-gray-50 ${
-                    selected.includes(instructor.id) ? "bg-blue-50" : ""
-                  }`}
-                >
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(instructor.id)}
-                      onChange={() => toggleSelect(instructor.id)}
-                      className="w-4 h-4 rounded accent-blue-500 cursor-pointer"
-                    />
-                  </td>
+                
                   <td className="py-3 pl-2">
                     <img
                       src={
