@@ -110,11 +110,13 @@ const InstructorChat = () => {
       }
     };
 
-    ws.onerror = () => {
+    ws.onerror = (error) => {
+      console.error("WS Error:", error);
       setWsStatus("disconnected");
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      console.log(`WS Closed: code=${event.code}, reason=${event.reason}`);
       setWsStatus("disconnected");
       // Auto-reconnect after 3 s if the course is still selected
       reconnectTimerRef.current = setTimeout(() => {
@@ -384,25 +386,25 @@ const InstructorChat = () => {
                               <p className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${msg.is_deleted ? 'italic opacity-70' : ''}`}>
                                 {msg.content}
                               </p>
-                              
-                              {/* Edit/Delete Actions */}
-                              {!msg.is_deleted && (
-                                <div className={`hidden group-hover:flex absolute top-1/2 -translate-y-1/2 bg-white shadow border rounded-lg px-1 py-1 gap-1 ${isMe ? '-left-16' : '-right-16'}`}>
-                                  {isMe && <button onClick={() => { setEditingMessageId(msg.id); setEditContent(msg.content); }} className="p-1 text-gray-400 hover:text-blue-500 rounded"><FaEdit size={11} /></button>}
-                                  {/* Instructors can delete ANY message */}
-                                  <button onClick={() => handleDeleteMessage(msg.id)} className="p-1 text-gray-400 hover:text-red-500 rounded"><FaTrash size={11} /></button>
-                                </div>
-                              )}
+                              {/* Edit/Delete Actions now inline below */}
                             </>
                           )}
                         </div>
-                        <p className={`text-[10px] mt-1 px-1 text-gray-400 ${isMe ? "text-right" : ""}`}>
-                          {new Date(msg.created_at || msg.timestamp).toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                          {msg.is_edited && !msg.is_deleted && <span className="ml-1 italic text-gray-400">(edited)</span>}
-                        </p>
+                        <div className={`flex items-center gap-2 mt-1 px-1 ${isMe ? "justify-end" : "justify-start"}`}>
+                          <p className="text-[10px] text-gray-400">
+                            {new Date(msg.created_at || msg.timestamp).toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                            {msg.is_edited && !msg.is_deleted && <span className="ml-1 italic text-gray-400">(edited)</span>}
+                          </p>
+                          {!msg.is_deleted && (
+                             <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                               {isMe && <button onClick={() => { setEditingMessageId(msg.id); setEditContent(msg.content); }} className="text-blue-500 hover:text-blue-700 p-0.5" title="Edit"><FaEdit size={11} /></button>}
+                               <button onClick={() => handleDeleteMessage(msg.id)} className="text-red-500 hover:text-red-700 p-0.5" title="Delete"><FaTrash size={11} /></button>
+                             </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
