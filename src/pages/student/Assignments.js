@@ -8,6 +8,7 @@ import {
   FaFileAlt,
   FaArrowRight,
   FaCommentDots,
+  FaDownload,
 } from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
 
