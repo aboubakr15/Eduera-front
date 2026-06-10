@@ -18,7 +18,6 @@ const CourseOfferings = () => {
   const [instructors, setInstructors] = useState([]);
   const [tas, setTAs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
   const [semester, setSemester] = useState("All");
   const [yearFilter, setYearFilter] = useState("All");
@@ -130,21 +129,6 @@ const CourseOfferings = () => {
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
 
-  const toggleSelect = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
-
-  const toggleAll = () => {
-    const pageIds = paginated.map((o) => o.id);
-    const allSelected = pageIds.every((id) => selected.includes(id));
-    if (allSelected) {
-      setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
-    } else {
-      setSelected((prev) => [...new Set([...prev, ...pageIds])]);
-    }
-  };
 
   const handleDelete = (id) => {
     const offering = offerings.find((o) => o.id === id);
@@ -155,7 +139,6 @@ const CourseOfferings = () => {
     try {
       await adminApi.deleteCourseOffering(confirmDelete.id);
       setOfferings((prev) => prev.filter((o) => o.id !== confirmDelete.id));
-      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
     } catch (error) {
       console.error("Failed to delete offering:", error);
     }
@@ -248,9 +231,6 @@ const CourseOfferings = () => {
     setForm((prev) => ({ ...prev, course_schedule: newSchedule }));
   };
 
-  const pageIds = paginated.map((o) => o.id);
-  const allPageSelected =
-    pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
   const navigate = useNavigate();
 
   return (
@@ -351,7 +331,6 @@ const CourseOfferings = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
                 Course
               </th>
@@ -381,7 +360,26 @@ const CourseOfferings = () => {
           <tbody>
             {loading ? (
               <tr>
-                
+                <td colSpan={8} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading offerings...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="text-center py-16 text-gray-300">
+                  <FaBook size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No offerings found</p>
+                </td>
+              </tr>
+            ) : (
+              paginated.map((offering) => (
+                <tr
+                  key={offering.id}
+                  className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                >
                   <td className="py-3 px-2">
                     <div className="font-semibold text-gray-800 text-sm">
                       {offering.course_details?.name ||

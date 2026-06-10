@@ -15,7 +15,7 @@ import { ArrowLeft } from "lucide-react";
 const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState([]);
+
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All");
   const [page, setPage] = useState(1);
@@ -77,21 +77,7 @@ const Courses = () => {
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
 
-  const toggleSelect = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
 
-  const toggleAll = () => {
-    const pageIds = paginated.map((c) => c.id);
-    const allSelected = pageIds.every((id) => selected.includes(id));
-    if (allSelected) {
-      setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
-    } else {
-      setSelected((prev) => [...new Set([...prev, ...pageIds])]);
-    }
-  };
 
   const handleDelete = (id) => {
     const course = courses.find((c) => c.id === id);
@@ -102,7 +88,6 @@ const Courses = () => {
     try {
       await adminApi.deleteCourse(confirmDelete.id);
       setCourses((prev) => prev.filter((c) => c.id !== confirmDelete.id));
-      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
     } catch (error) {
       console.error("Failed to delete course:", error);
     }
@@ -163,9 +148,7 @@ const Courses = () => {
     }
   };
 
-  const pageIds = paginated.map((c) => c.id);
-  const allPageSelected =
-    pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
+
 
   return (
     <div className="min-h-screen font-sans">
@@ -242,7 +225,7 @@ const Courses = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              
+
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
                 Course Name
               </th>
@@ -263,7 +246,26 @@ const Courses = () => {
           <tbody>
             {loading ? (
               <tr>
-                
+                <td colSpan={5} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading courses...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center py-16 text-gray-300">
+                  <FaBook size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No courses found</p>
+                </td>
+              </tr>
+            ) : (
+              paginated.map((course) => (
+                <tr
+                  key={course.id}
+                  className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                >
                   <td className="py-3 px-2 font-semibold text-gray-800 text-sm">
                     {course.name}
                   </td>

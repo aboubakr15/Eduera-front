@@ -15,7 +15,6 @@ import { ArrowLeft } from "lucide-react";
 const TA = () => {
   const [tas, setTAs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All");
   const [page, setPage] = useState(1);
@@ -83,21 +82,6 @@ const TA = () => {
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
 
-  const toggleSelect = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
-
-  const toggleAll = () => {
-    const pageIds = paginated.map((s) => s.id);
-    const allSelected = pageIds.every((id) => selected.includes(id));
-    if (allSelected) {
-      setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
-    } else {
-      setSelected((prev) => [...new Set([...prev, ...pageIds])]);
-    }
-  };
 
   const handleDelete = (id) => {
     const ta = tas.find((s) => s.id === id);
@@ -108,7 +92,6 @@ const TA = () => {
     try {
       await adminApi.deleteUser(confirmDelete.id);
       setTAs((prev) => prev.filter((s) => s.id !== confirmDelete.id));
-      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
     } catch (error) {
       console.error("Failed to delete TA:", error);
     }
@@ -170,9 +153,6 @@ const TA = () => {
     }
   };
 
-  const pageIds = paginated.map((s) => s.id);
-  const allPageSelected =
-    pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
   const navigate = useNavigate();
 
   return (
@@ -250,7 +230,6 @@ const TA = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              
               <th className="w-16 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">
                 Image
               </th>
@@ -280,7 +259,29 @@ const TA = () => {
           <tbody>
             {loading ? (
               <tr>
-                
+                <td colSpan={8} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading TAs...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="text-center py-16 text-gray-300">
+                  <FaUserGraduate
+                    size={32}
+                    className="mx-auto mb-3 opacity-30"
+                  />
+                  <p className="text-sm">No teaching assistants found</p>
+                </td>
+              </tr>
+            ) : (
+              paginated.map((ta) => (
+                <tr
+                  key={ta.id}
+                  className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                >
                   <td className="py-3 pl-2">
                     <img
                       src={

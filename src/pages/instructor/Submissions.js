@@ -20,7 +20,7 @@ const InstructorSubmissions = () => {
   const [textToView, setTextToView] = useState("");
   const [gradeError, setGradeError] = useState(null);
   const [gradeSuccess, setGradeSuccess] = useState(null);
-  const [selected, setSelected] = useState([]);
+
   const [page, setPage] = useState(1);
   const perPage = 8;
   const navigate = useNavigate();
@@ -108,25 +108,7 @@ const InstructorSubmissions = () => {
   const paginated = submissions.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(submissions.length / perPage);
 
-  const toggleSelect = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
 
-  const toggleAll = () => {
-    const pageIds = paginated.map((s) => s.id);
-    const allSelected = pageIds.every((id) => selected.includes(id));
-    if (allSelected) {
-      setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
-    } else {
-      setSelected((prev) => [...new Set([...prev, ...pageIds])]);
-    }
-  };
-
-  const pageIds = paginated.map((s) => s.id);
-  const allPageSelected =
-    pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
 
   if (loading)
     return (
@@ -169,7 +151,7 @@ const InstructorSubmissions = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              
+
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
                 Student
               </th>
@@ -196,7 +178,27 @@ const InstructorSubmissions = () => {
           <tbody>
             {loading ? (
               <tr>
-                
+                <td colSpan={7} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading submissions...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-16 text-gray-300">
+                  <FaFileAlt size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No submissions found</p>
+                </td>
+              </tr>
+            ) : (
+              paginated.map((s) => (
+                <tr
+                  key={s.id}
+                  className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                >
+
                   <td className="py-3 px-2 font-semibold text-gray-800 text-sm">
                     {s.student_name}
                   </td>

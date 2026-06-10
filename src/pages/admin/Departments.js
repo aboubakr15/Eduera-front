@@ -17,7 +17,6 @@ const Departments = () => {
   const [departments, setDepartments] = useState([]);
   const [professors, setProfessors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
@@ -68,21 +67,6 @@ const Departments = () => {
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
 
-  const toggleSelect = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
-
-  const toggleAll = () => {
-    const pageIds = paginated.map((d) => d.id);
-    const allSelected = pageIds.every((id) => selected.includes(id));
-    if (allSelected) {
-      setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
-    } else {
-      setSelected((prev) => [...new Set([...prev, ...pageIds])]);
-    }
-  };
 
   const handleDelete = (id) => {
     const dept = departments.find((d) => d.id === id);
@@ -93,7 +77,6 @@ const Departments = () => {
     try {
       await adminApi.deleteDepartment(confirmDelete.id);
       setDepartments((prev) => prev.filter((d) => d.id !== confirmDelete.id));
-      setSelected((prev) => prev.filter((x) => x !== confirmDelete.id));
     } catch (error) {
       console.error("Failed to delete department:", error);
     }
@@ -153,9 +136,6 @@ const Departments = () => {
     }
   };
 
-  const pageIds = paginated.map((d) => d.id);
-  const allPageSelected =
-    pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
 
   return (
     <div className="min-h-screen font-sans">
@@ -209,7 +189,6 @@ const Departments = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
                 Department Name
               </th>
@@ -227,7 +206,26 @@ const Departments = () => {
           <tbody>
             {loading ? (
               <tr>
-                
+                <td colSpan={4} className="text-center py-16 text-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-[#D67A1E] rounded-full animate-spin"></div>
+                    <p className="text-sm">Loading departments...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-center py-16 text-gray-300">
+                  <FaBuilding size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No departments found</p>
+                </td>
+              </tr>
+            ) : (
+              paginated.map((dept) => (
+                <tr
+                  key={dept.id}
+                  className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                >
                   <td className="py-3 px-2 font-semibold text-gray-800 text-sm">
                     {dept.name}
                   </td>
