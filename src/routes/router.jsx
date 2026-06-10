@@ -8,6 +8,8 @@ import ProtectedRoute from "./ProtectedRoute";
 
 import Home from "../pages/Home";
 import Login from "../pages/Login";
+import ForgotPassword from "../pages/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword";
 
 import Dashboard from "../pages/admin/Dashboard";
 import Students from "../pages/admin/Students";
@@ -20,6 +22,7 @@ import Account from "../pages/admin/Account";
 import Settings from "../pages/admin/Settings";
 import TA from "../pages/admin/TA";
 import UploadCenter from "../pages/admin/UploadCenter";
+import AdminNotifications from "../pages/admin/Notifications";
 
 import StudentDashboard from "../pages/student/Dashboard";
 import StudentCourses from "../pages/student/Courses";
@@ -32,6 +35,7 @@ import StudentProfile from "../pages/student/Profile";
 import StudentChat from "../pages/student/Chat";
 import StudentNotifications from "../pages/student/Notifications";
 import StudentChatBot from "../pages/student/ChatBot";
+import StudentAnnouncements from "../pages/student/Announcements";
 
 import InstructorDashboard from "../pages/instructor/Dashboard";
 import InstructorCourses from "../pages/instructor/Courses";
@@ -54,6 +58,8 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
       { path: "/login", element: <Login /> },
+      { path: "/forgot-password", element: <ForgotPassword /> },
+      { path: "/reset-password", element: <ResetPassword /> },
     ],
   },
 
@@ -75,6 +81,7 @@ export const router = createBrowserRouter([
           { path: "chatbot", element: <ChatBot /> },
           { path: "settings", element: <Settings /> },
           { path: "account", element: <Account /> },
+          { path: "notifications", element: <AdminNotifications /> },
         ],
       },
     ],
@@ -88,6 +95,7 @@ export const router = createBrowserRouter([
         element: <StudentLayout />,
         children: [
           { path: "dashboard", element: <StudentDashboard /> },
+          { path: "announcements", element: <StudentAnnouncements /> },
           { path: "courses", element: <StudentCourses /> },
           { path: "courses/:id", element: <StudentCourseDetails /> },
           { path: "enrollments", element: <StudentEnrollments /> },

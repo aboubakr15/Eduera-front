@@ -127,9 +127,13 @@ const Login = () => {
                 />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-              <span className="text-sm text-[#1B2036] font-medium cursor-pointer hover:underline underline-offset-2">
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-sm text-[#1B2036] font-medium cursor-pointer hover:underline underline-offset-2 bg-transparent border-none p-0"
+              >
                 Forgot password?
-              </span>
+              </button>
             </div>
 
             <button

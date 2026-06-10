@@ -2,6 +2,7 @@ import api from './axios';
 
 export const studentApi = {
   getDashboard: () => api.get('/api/student/dashboard/'),
+  getAnnouncements: () => api.get('/api/student/announcements/'),
   
   getCourses: () => api.get('/api/student/courses/'),
   enrollCourse: (data) => api.post('/api/student/courses/', data),

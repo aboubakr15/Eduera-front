@@ -320,7 +320,7 @@ const StudentDashboard = () => {
                 Course Announcements
               </h2>
               <Link
-                to="/student/notifications"
+                to="/student/announcements"
                 className="text-sm text-blue-600 hover:underline"
               >
                 View All

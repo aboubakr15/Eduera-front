@@ -251,14 +251,7 @@ const Instructors = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="w-12 px-4 py-3">
-                <input
-                  type="checkbox"
-                  checked={allPageSelected}
-                  onChange={toggleAll}
-                  className="w-4 h-4 rounded accent-blue-500 cursor-pointer"
-                />
-              </th>
+              
               <th className="w-16 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left">
                 Image
               </th>

@@ -21,6 +21,7 @@ import {
   FaSignOutAlt,
   FaUserGraduate,
   FaChevronDown,
+  FaBullhorn,
 } from "react-icons/fa";
 
 const getRoleIcon = (role) => {
@@ -62,6 +63,7 @@ const academicItems = [
 ];
 
 const communicationItems = [
+  { label: "Announcements", icon: <FaBullhorn size={18} />, path: "/student/announcements" },
   { label: "Chat", icon: <MdChat size={20} />, path: "/student/chat" },
   // {
   //   label: "Notifications",

@@ -3,91 +3,11 @@ import { useAuth } from "../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 
-const instructorNotifications = [
-  {
-    id: 1,
-    text: "New assignment 'Midterm Review' has been posted",
-    time: "2 hours ago",
-    isRead: false,
-  },
-  {
-    id: 2,
-    text: "Student Ahmed submitted Assignment 2",
-    time: "5 hours ago",
-    isRead: false,
-  },
-  {
-    id: 3,
-    text: 'Course "Deep Learning" material was updated',
-    time: "Yesterday",
-    isRead: true,
-  },
-  {
-    id: 4,
-    text: "System maintenance scheduled for Friday",
-    time: "1 day ago",
-    isRead: true,
-  },
-];
-
-const studentNotifications = [
-  {
-    id: 1,
-    text: "New assignment 'Midterm Review' has been posted in Deep Learning",
-    time: "1 hour ago",
-    isRead: false,
-  },
-  {
-    id: 2,
-    text: "Your grade for Assignment 1 is now available",
-    time: "3 hours ago",
-    isRead: false,
-  },
-  {
-    id: 3,
-    text: "New announcement in Data Structures course",
-    time: "Yesterday",
-    isRead: false,
-  },
-  {
-    id: 4,
-    text: 'Course "Machine Learning" material was updated',
-    time: "2 days ago",
-    isRead: true,
-  },
-  {
-    id: 5,
-    text: "Reminder: Quiz 3 deadline is tomorrow",
-    time: "2 days ago",
-    isRead: true,
-  },
-];
-
-const adminNotifications = [
-  {
-    id: 1,
-    text: "New instructor registration request",
-    time: "30 min ago",
-    isRead: false,
-  },
-  {
-    id: 2,
-    text: "System backup completed successfully",
-    time: "2 hours ago",
-    isRead: false,
-  },
-  {
-    id: 3,
-    text: "New course 'AI Basics' pending approval",
-    time: "5 hours ago",
-    isRead: true,
-  },
-];
-
 const Topbar = ({ user, role = "instructor" }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   const segments = location.pathname.split("/").filter(Boolean);
   const basePath = segments.length > 0 ? `/${segments[0]}` : "";
@@ -103,13 +23,6 @@ const Topbar = ({ user, role = "instructor" }) => {
       .join(" ");
   }
 
-  const notifications =
-    role === "student"
-      ? studentNotifications
-      : role === "admin"
-        ? adminNotifications
-        : instructorNotifications;
-
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const { user: authUser } = useAuth();
@@ -117,6 +30,20 @@ const Topbar = ({ user, role = "instructor" }) => {
 
   useEffect(() => {
     if (!authUser) return;
+    
+    // Fetch notifications
+    const fetchNotifications = async () => {
+      try {
+        const { authApi } = await import("../api/authApi");
+        const res = await authApi.getNotifications();
+        setNotifications(res.data);
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err);
+      }
+    };
+    fetchNotifications();
+
+    // Fetch profile
     const fetchProfile = async () => {
       try {
         if (role === "student") {
