@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { NavLink } from "react-router-dom";
+import { adminApi } from "../../api/adminApi";
 import {
   MdDashboard,
   MdAccountCircle,
@@ -19,17 +20,24 @@ import {
   FaUserTie,
   FaUserSecret,
 } from "react-icons/fa";
-import Avatar from "../../assets/images/man.png";
 import { useNavigate } from "react-router-dom";
-const getRoleIcon = (role) => {
+
+const getRoleIcon = (role, profilePic) => {
+  if (profilePic) {
+    return (
+      <img
+        src={profilePic}
+        className="w-8 h-8 rounded-full object-cover"
+        alt="admin"
+      />
+    );
+  }
   switch (role) {
     case "ADMIN":
       return (
-        <img
-          src={Avatar}
-          className="w-8 h-8 rounded-full object-cover"
-          alt="admin"
-        />
+        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 overflow-hidden">
+          <span className="text-sm font-bold">A</span>
+        </div>
       );
     case "PROFESSOR":
       return <FaUserTie size={20} className="text-blue-400" />;
@@ -49,7 +57,6 @@ const managementItems = [
   { label: "Departments", icon: <FaBuilding size={18} /> },
   { label: "Courses", icon: <FaSchool size={18} /> },
   { label: "Course Offerings", icon: <FaSchool size={18} /> },
-
 ];
 
 const bottomNavItems = [
@@ -63,8 +70,22 @@ const bottomNavItems = [
 const AdminSidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await adminApi.getProfile();
+        setProfile(res.data);
+      } catch (err) {
+        console.error("Failed to fetch admin profile for sidebar:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   return (
     <div
       className={`relative h-screen bg-[#1B2036] flex flex-col transition-all duration-300 ease-in-out ${isOpen ? "w-60" : "w-16"}`}
@@ -101,7 +122,7 @@ const AdminSidebar = () => {
           className={`flex items-center gap-3 bg-white/10 rounded-xl px-2 py-2.5 cursor-pointer hover:bg-white/15 transition-colors ${!isOpen ? "justify-center" : ""}`}
         >
           <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-            {getRoleIcon(user?.primary_role)}
+            {getRoleIcon(user?.primary_role, profile?.profile_picture_url)}
           </div>
           {isOpen && (
             <>

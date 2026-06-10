@@ -292,21 +292,17 @@ const InstructorCourseDetails = () => {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-gray-800">
-                        {s.student_name}
+                        {s.full_name || s.student_name}
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {s.student_email}
+                        {s.email || s.student_email}
                       </p>
                     </div>
                   </div>
                   <span
-                    className={`text-xs px-2.5 py-1 rounded-lg font-medium flex-shrink-0 ${
-                      s.status === "ACTIVE"
-                        ? "bg-emerald-50 text-emerald-600"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
+                    className={`text-xs px-2.5 py-1 rounded-lg font-medium flex-shrink-0 bg-emerald-50 text-emerald-600`}
                   >
-                    {s.status}
+                    ACTIVE
                   </span>
                 </div>
               ))

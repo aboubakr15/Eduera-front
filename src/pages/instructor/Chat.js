@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { instructorApi } from "../../api/instructorApi";
-import { FaPaperPlane, FaComments, FaBook, FaUsers, FaWifi, FaLock, FaLockOpen } from "react-icons/fa";
+import { FaPaperPlane, FaComments, FaBook, FaUsers, FaWifi, FaLock, FaLockOpen, FaEdit, FaTrash } from "react-icons/fa";
 import { ArrowLeft, WifiOff } from "lucide-react";
 
 /**
@@ -30,7 +30,10 @@ const InstructorChat = () => {
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [wsStatus, setWsStatus] = useState("disconnected"); // "connected" | "connecting" | "disconnected"
+  const [wsStatus, setWsStatus] = useState("disconnected");
+  
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editContent, setEditContent] = useState(""); // "connected" | "connecting" | "disconnected"
 
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
@@ -68,7 +71,7 @@ const InstructorChat = () => {
     if (!token) return;
 
     // Determine WS host from current API base URL
-    const apiBase = process.env.REACT_APP_API_URL || window.location.origin;
+    const apiBase = process.env.REACT_APP_BASE_URL || "https://eduera-backend-production.up.railway.app";
     const wsBase = apiBase.replace(/^http/, "ws").replace(/\/$/, "");
     const wsUrl = `${wsBase}/ws/course-chat/${course.id}/?token=${token}`;
 
@@ -85,6 +88,19 @@ const InstructorChat = () => {
       try {
         const msg = JSON.parse(event.data);
         setMessages((prev) => {
+          if (msg.action === "edit_message") {
+            return prev.map((m) =>
+              m.id === msg.id
+                ? { ...m, content: msg.content, is_edited: true }
+                : m
+            );
+          } else if (msg.action === "delete_message") {
+            return prev.map((m) =>
+              m.id === msg.id
+                ? { ...m, content: msg.content, is_deleted: true }
+                : m
+            );
+          }
           // Avoid duplicate messages
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
@@ -178,7 +194,7 @@ const InstructorChat = () => {
     try {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         // Send via WebSocket — the consumer will broadcast it back
-        wsRef.current.send(JSON.stringify({ content }));
+        wsRef.current.send(JSON.stringify({ action: "chat_message", content }));
       } else {
         // HTTP fallback
         const res = await instructorApi.sendCourseMessage(selectedCourse.id, { content });
@@ -189,6 +205,16 @@ const InstructorChat = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleEditMessage = (messageId, newContent) => {
+    if (!newContent.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ action: "edit_message", message_id: messageId, content: newContent }));
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ action: "delete_message", message_id: messageId }));
   };
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -336,14 +362,46 @@ const InstructorChat = () => {
                             {isMe ? "Me" : senderName?.split(" ")[0]}
                           </p>
                         )}
-                        <div className={`px-4 py-2.5 shadow-sm ${isMe ? "bg-[#1B2036] text-white rounded-2xl rounded-br-sm" : "bg-white text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100"}`}>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+                        <div className={`group relative px-4 py-2.5 shadow-sm ${isMe ? "bg-[#1B2036] text-white rounded-2xl rounded-br-sm" : "bg-white text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100"}`}>
+                          {editingMessageId === msg.id ? (
+                            <div className="flex flex-col gap-2 min-w-[200px]">
+                              <textarea
+                                className="w-full text-gray-800 bg-white rounded-md p-1.5 text-sm resize-none focus:outline-none"
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                rows={2}
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => setEditingMessageId(null)} className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Cancel</button>
+                                <button 
+                                  onClick={() => { handleEditMessage(msg.id, editContent); setEditingMessageId(null); }} 
+                                  className="text-xs px-2 py-1 bg-[#D67A1E] text-white rounded hover:bg-[#b86a15]"
+                                >Save</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${msg.is_deleted ? 'italic opacity-70' : ''}`}>
+                                {msg.content}
+                              </p>
+                              
+                              {/* Edit/Delete Actions */}
+                              {!msg.is_deleted && (
+                                <div className={`hidden group-hover:flex absolute top-1/2 -translate-y-1/2 bg-white shadow border rounded-lg px-1 py-1 gap-1 ${isMe ? '-left-16' : '-right-16'}`}>
+                                  {isMe && <button onClick={() => { setEditingMessageId(msg.id); setEditContent(msg.content); }} className="p-1 text-gray-400 hover:text-blue-500 rounded"><FaEdit size={11} /></button>}
+                                  {/* Instructors can delete ANY message */}
+                                  <button onClick={() => handleDeleteMessage(msg.id)} className="p-1 text-gray-400 hover:text-red-500 rounded"><FaTrash size={11} /></button>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                         <p className={`text-[10px] mt-1 px-1 text-gray-400 ${isMe ? "text-right" : ""}`}>
                           {new Date(msg.created_at || msg.timestamp).toLocaleTimeString("en-US", {
                             hour: "numeric",
                             minute: "2-digit",
                           })}
+                          {msg.is_edited && !msg.is_deleted && <span className="ml-1 italic text-gray-400">(edited)</span>}
                         </p>
                       </div>
                     </div>

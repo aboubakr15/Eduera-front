@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { studentApi } from "../../api/studentApi";
 import {
-  FaPaperPlane, FaComments, FaBook, FaUsers, FaCrown, FaWifi,
+  FaPaperPlane, FaComments, FaBook, FaUsers, FaCrown, FaWifi, FaEdit, FaTrash
 } from "react-icons/fa";
 import { ArrowLeft, WifiOff } from "lucide-react";
 
@@ -33,6 +33,9 @@ const StudentChat = () => {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [wsStatus, setWsStatus] = useState("disconnected");
+  
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editContent, setEditContent] = useState("");
 
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
@@ -87,7 +90,7 @@ const StudentChat = () => {
     const token = localStorage.getItem("access_token");
     if (!token) return;
 
-    const apiBase = process.env.REACT_APP_API_URL || window.location.origin;
+    const apiBase = process.env.REACT_APP_BASE_URL || "https://eduera-backend-production.up.railway.app";
     const wsBase = apiBase.replace(/^http/, "ws").replace(/\/$/, "");
     const wsUrl = `${wsBase}/ws/course-chat/${course.id}/?token=${token}`;
 
@@ -103,6 +106,20 @@ const StudentChat = () => {
       try {
         const msg = JSON.parse(event.data);
         setMessages((prev) => {
+          if (msg.action === "edit_message") {
+            return prev.map((m) =>
+              m.id === msg.id
+                ? { ...m, content: msg.content, is_edited: true }
+                : m
+            );
+          } else if (msg.action === "delete_message") {
+            return prev.map((m) =>
+              m.id === msg.id
+                ? { ...m, content: msg.content, is_deleted: true }
+                : m
+            );
+          }
+          // Default: new message
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
@@ -166,7 +183,7 @@ const StudentChat = () => {
 
     try {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ content }));
+        wsRef.current.send(JSON.stringify({ action: "chat_message", content }));
       } else {
         const res = await studentApi.sendCourseMessage(selectedCourse.id, { content });
         setMessages((prev) => [...prev, res.data]);
@@ -176,6 +193,16 @@ const StudentChat = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleEditMessage = (messageId, newContent) => {
+    if (!newContent.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ action: "edit_message", message_id: messageId, content: newContent }));
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ action: "delete_message", message_id: messageId }));
   };
 
   if (loading) {
@@ -321,14 +348,44 @@ const StudentChat = () => {
                           </div>
                         )}
 
-                        <div className={`px-3.5 py-2.5 ${
+                        <div className={`group relative px-3.5 py-2.5 ${
                           isMe
                             ? "bg-[#465182] text-white rounded-2xl rounded-tr-lg shadow-md shadow-[#465182]/10"
                             : isInstructor
                             ? "bg-white text-gray-800 rounded-2xl rounded-tl-lg border border-[#D67A1E]/15 shadow-sm ring-1 ring-[#D67A1E]/5"
                             : "bg-white text-gray-800 rounded-2xl rounded-tl-lg border border-gray-200/50 shadow-sm"
                         }`}>
-                          <p className="text-[13px] leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+                          {editingMessageId === msg.id ? (
+                            <div className="flex flex-col gap-2 min-w-[200px]">
+                              <textarea
+                                className="w-full text-gray-800 bg-white rounded-md p-1.5 text-[13px] resize-none focus:outline-none"
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                rows={2}
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => setEditingMessageId(null)} className="text-[11px] px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Cancel</button>
+                                <button 
+                                  onClick={() => { handleEditMessage(msg.id, editContent); setEditingMessageId(null); }} 
+                                  className="text-[11px] px-2 py-1 bg-[#D67A1E] text-white rounded hover:bg-[#b86a15]"
+                                >Save</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className={`text-[13px] leading-relaxed whitespace-pre-wrap break-words ${msg.is_deleted ? 'italic opacity-70' : ''}`}>
+                                {msg.content}
+                              </p>
+                              
+                              {/* Edit/Delete Actions for sender's own message */}
+                              {isMe && !msg.is_deleted && (
+                                <div className="hidden group-hover:flex absolute -left-16 top-1/2 -translate-y-1/2 bg-white shadow border rounded-lg px-1 py-1 gap-1">
+                                  <button onClick={() => { setEditingMessageId(msg.id); setEditContent(msg.content); }} className="p-1 text-gray-400 hover:text-blue-500 rounded"><FaEdit size={11} /></button>
+                                  <button onClick={() => handleDeleteMessage(msg.id)} className="p-1 text-gray-400 hover:text-red-500 rounded"><FaTrash size={11} /></button>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
 
                         <p className={`text-[10px] mt-0.5 px-0.5 text-gray-400 font-medium ${isMe ? "text-right" : ""}`}>
@@ -336,6 +393,7 @@ const StudentChat = () => {
                             hour: "numeric",
                             minute: "2-digit",
                           })}
+                          {msg.is_edited && !msg.is_deleted && <span className="ml-1 italic text-gray-400">(edited)</span>}
                         </p>
                       </div>
                     </div>

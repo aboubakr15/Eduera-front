@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { NavLink } from "react-router-dom";
+import { instructorApi } from "../../api/instructorApi";
 import {
   MdDashboard,
   MdAccountCircle,
@@ -21,28 +22,32 @@ import {
   FaChalkboardTeacher,
   FaChevronDown,
 } from "react-icons/fa";
-import Avatar from "../../assets/images/man.png";
 import { useNavigate } from "react-router-dom";
 
-const getRoleIcon = (role) => {
+const getRoleIcon = (role, profilePic) => {
+  if (profilePic) {
+    return (
+      <img
+        src={profilePic}
+        className="w-8 h-8 rounded-full object-cover"
+        alt="instructor"
+      />
+    );
+  }
   switch (role) {
     case "PROFESSOR":
       return (
-        <img
-          src={Avatar}
-          className="w-8 h-8 rounded-full object-cover"
-          alt="admin"
-        />
+        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 overflow-hidden">
+          <span className="text-sm font-bold">P</span>
+        </div>
       );
     case "TA":
       return <FaChalkboardTeacher size={20} className="text-green-400" />;
     default:
       return (
-        <img
-          src={Avatar}
-          className="w-8 h-8 rounded-full object-cover"
-          alt="instructor"
-        />
+        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 overflow-hidden">
+          <span className="text-sm font-bold">I</span>
+        </div>
       );
   }
 };
@@ -63,8 +68,21 @@ const managementItems = [
 const InstructorSidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await instructorApi.getProfile();
+        setProfile(res.data);
+      } catch (err) {
+        console.error("Failed to fetch instructor profile for sidebar:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const basePath = user?.primary_role === "TA" ? "/ta" : "/instructor";
   const roleLabel =
@@ -114,7 +132,7 @@ const bottomNavItems = [
           className={`flex items-center gap-3 bg-white/10 rounded-xl px-2 py-2.5 cursor-pointer hover:bg-white/15 transition-colors ${!isOpen ? "justify-center" : ""}`}
         >
           <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-            {getRoleIcon(user?.primary_role)}
+            {getRoleIcon(user?.primary_role, profile?.profile_picture_url)}
           </div>
           {isOpen && (
             <>
