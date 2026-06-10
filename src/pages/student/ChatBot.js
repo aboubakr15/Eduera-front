@@ -458,18 +458,18 @@ const WelcomeScreen = ({ onSend, sending, courses, coursesLoading }) => {
 
         <div className="flex flex-wrap gap-2 mt-4 justify-center">
           <button
-            onClick={() => { onSend("Create a presentation covering the key topics from my course materials", selectedCourse); setInput(""); }}
+            onClick={() => { onSend("Can you generate a quiz for me based on my course materials?", selectedCourse); setInput(""); }}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 hover:border-[#D67A1E]/20 hover:text-[#D67A1E] hover:bg-[#D67A1E]/[0.04] transition-all duration-200 shadow-sm"
           >
-            <MdOutlineSlideshow size={13} />
-            Create a presentation
+            <FaQuestionCircle size={13} />
+            Generate a Quiz
           </button>
           <button
-            onClick={() => { onSend("Help me create slides about a topic I'll describe", selectedCourse); setInput(""); }}
+            onClick={() => { onSend("Can you create a presentation covering the key topics from my course materials?", selectedCourse); setInput(""); }}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 hover:border-[#465182]/20 hover:text-[#465182] hover:bg-[#465182]/[0.04] transition-all duration-200 shadow-sm"
           >
             <MdOutlineSlideshow size={13} />
-            Make slides
+            Create a presentation
           </button>
         </div>
       </div>
@@ -1040,20 +1040,7 @@ const ChatBot = () => {
             <FaPlus size={11} />
             New Chat
           </button>
-          <button
-            onClick={() => setActiveView("quiz")}
-            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 ${
-              activeView === "quiz"
-                ? "bg-[#D67A1E]/[0.08] text-[#D67A1E] ring-1 ring-[#D67A1E]/15"
-                : "bg-[#F8F9FB] text-gray-500 hover:bg-gray-100 hover:text-[#D67A1E]"
-            }`}
-          >
-            <FaQuestionCircle size={13} />
-            Quiz Generator
-            {activeView === "quiz" && (
-              <FaChevronRight size={9} className="ml-auto opacity-50" />
-            )}
-          </button>
+
         </div>
 
         <div className="mx-4 border-t border-gray-100" />
@@ -1173,15 +1160,8 @@ const ChatBot = () => {
           >
             <FaBars size={13} />
           </button>
-          {activeView !== "chat" && (
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#D67A1E]/15 to-[#D67A1E]/5 flex items-center justify-center border border-[#D67A1E]/10">
-              {activeView === "quiz" && (
-                <FaQuestionCircle size={13} className="text-[#D67A1E]" />
-              )}
-            </div>
-          )}
           <h1 className="text-[15px] font-bold text-gray-800 tracking-tight">
-            {activeView === "quiz" && "Quiz Generator"}
+            Chat
           </h1>
         </div>
 
@@ -1201,7 +1181,6 @@ const ChatBot = () => {
               {activeView === "chat" && !isWelcome && (
                 <ChatView messages={messages} onSend={handleSend} sending={sending} courses={courses} coursesLoading={coursesLoading} />
               )}
-              {activeView === "quiz" && <QuizGenerator />}
             </>
           )}
         </div>
