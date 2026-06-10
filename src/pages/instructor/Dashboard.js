@@ -101,28 +101,28 @@ const InstructorDashboard = () => {
       value: total_courses || 0,
       color: "text-blue-600",
       bg: "bg-blue-50",
-      path: "/instructor/courses",
+      path: `${window.location.pathname.startsWith('/ta') ? '/ta' : '/instructor'}/courses`,
     },
     {
       label: "Total Students",
       value: total_students || 0,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
-      path: "/instructor/students",
+      path: `${window.location.pathname.startsWith('/ta') ? '/ta' : '/instructor'}/students`,
     },
     {
       label: "Pending Submissions",
       value: pending_submissions || 0,
       color: "text-amber-600",
       bg: "bg-amber-50",
-      path: "/instructor/submissions",
+      path: `${window.location.pathname.startsWith('/ta') ? '/ta' : '/instructor'}/submissions`,
     },
     {
       label: "Upcoming Assignments",
       value: upcoming_assignments || 0,
       color: "text-purple-600",
       bg: "bg-purple-50",
-      path: "/instructor/assignments",
+      path: `${window.location.pathname.startsWith('/ta') ? '/ta' : '/instructor'}/assignments`,
     },
   ];
 
@@ -182,7 +182,7 @@ const InstructorDashboard = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold text-gray-800">My Courses</h2>
               <Link
-                to="/instructor/courses"
+                to={window.location.pathname.startsWith('/ta') ? "/ta/courses" : "/instructor/courses"}
                 className="text-sm text-blue-600 hover:underline"
               >
                 View All
@@ -223,7 +223,7 @@ const InstructorDashboard = () => {
                 Announcements
               </h2>
               <Link
-                to="/instructor/announcements"
+                to={window.location.pathname.startsWith('/ta') ? "/ta/announcements" : "/instructor/announcements"}
                 className="text-sm text-blue-600 hover:underline"
               >
                 View All
@@ -379,7 +379,7 @@ const InstructorDashboard = () => {
             </div>
 
             <Link
-              to="/instructor/courses"
+              to={window.location.pathname.startsWith('/ta') ? "/ta/courses" : "/instructor/courses"}
               className="relative z-10 mt-6 px-8 py-2 rounded-xl bg-[#282f4f] text-white font-normal transition-all shadow-lg hover:shadow-xl hover:scale-105 transform"
             >
               View Courses

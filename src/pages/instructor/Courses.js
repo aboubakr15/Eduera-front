@@ -129,7 +129,7 @@ const InstructorCourses = () => {
               {/* Footer Action */}
               <div className="mt-auto pt-4 border-t border-gray-50">
                 <Link
-                  to={`/instructor/courses/${course.id}`}
+                  to={`${window.location.pathname.startsWith('/ta') ? '/ta' : '/instructor'}/courses/${course.id}`}
                   className="flex items-center gap-2 text-sm text-[#D67A1E] font-semibold hover:gap-3 transition-all duration-200"
                 >
                   View Details

@@ -286,7 +286,7 @@ const InstructorAssignments = () => {
                   </button>
                 )}
                 <button
-                  onClick={() => navigate(`/instructor/submissions?assignment_id=${a.id}`)}
+                  onClick={() => navigate(`${window.location.pathname.startsWith('/ta') ? '/ta' : '/instructor'}/submissions?assignment_id=${a.id}`)}
                   className="flex items-center gap-1.5 text-sm text-[#D67A1E] font-semibold hover:underline"
                 >
                   Submissions

@@ -247,6 +247,7 @@ const TA = () => {
               </th>
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-left px-2">
                 Department
+              </th>
               <th className="py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right pr-6">
                 Action
               </th>

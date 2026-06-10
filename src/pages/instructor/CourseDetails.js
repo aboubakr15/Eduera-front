@@ -85,7 +85,7 @@ const InstructorCourseDetails = () => {
           {error}
         </div>
         <Link
-          to="/instructor/courses"
+          to={window.location.pathname.startsWith('/ta') ? "/ta/courses" : "/instructor/courses"}
           className="text-sm text-[#D67A1E] font-semibold hover:underline"
         >
           ← Back to Courses
