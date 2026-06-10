@@ -397,20 +397,14 @@ const WelcomeScreen = ({ onSend, sending }) => {
         </div>
 
         <div className="flex flex-wrap gap-2 mt-4 justify-center">
-          <button
-            onClick={() => { onSend("Can you generate a quiz for me based on my course materials?", selectedCourse); setInput(""); }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 hover:border-[#D67A1E]/20 hover:text-[#D67A1E] hover:bg-[#D67A1E]/[0.04] transition-all duration-200 shadow-sm"
-          >
-            <FaQuestionCircle size={13} />
-            Generate a Quiz
-          </button>
-          <button
-            onClick={() => { onSend("Can you create a presentation covering the key topics from my course materials?", selectedCourse); setInput(""); }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 hover:border-[#465182]/20 hover:text-[#465182] hover:bg-[#465182]/[0.04] transition-all duration-200 shadow-sm"
-          >
-            <MdOutlineSlideshow size={13} />
-            Create a presentation
-          </button>
+          <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 shadow-sm cursor-default">
+            <FaQuestionCircle size={13} className="text-[#D67A1E]" />
+            Try: "Generate a quiz for chapter 1 in logic design"
+          </div>
+          <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 shadow-sm cursor-default">
+            <MdOutlineSlideshow size={13} className="text-[#465182]" />
+            Try: "Create a presentation for lec 1 in intro to CS"
+          </div>
         </div>
       </div>
     </div>
