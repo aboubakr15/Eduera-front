@@ -22,6 +22,7 @@ import {
   FaFile,
   FaImage,
   FaDownload,
+  FaBook,
 } from "react-icons/fa";
 import { MdOutlineSlideshow } from "react-icons/md";
 import botImg from "../../assets/images/botImg.png";
