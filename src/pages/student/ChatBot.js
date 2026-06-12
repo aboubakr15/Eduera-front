@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FaPlus,
   FaRobot,
@@ -19,6 +19,7 @@ import {
   FaTrash,
   FaDownload,
   FaBook,
+  FaGraduationCap,
 } from "react-icons/fa";
 import { MdOutlineSlideshow } from "react-icons/md";
 import botImg from "../../assets/images/botImg.png";
@@ -273,6 +274,151 @@ const QuizGenerator = () => {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+const CollegeRulesChat = () => {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async () => {
+    if (!input.trim() || sending) return;
+    const userMsg = { id: Date.now() + Math.random(), role: "user", text: input };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setSending(true);
+    try {
+      const response = await studentApi.sendSystemInstructionsMessage({ message: input });
+      const data = response.data;
+      const aiText = data.ai_response || data.answer || data.message || JSON.stringify(data);
+      const botMsg = { id: Date.now() + Math.random(), role: "assistant", text: aiText };
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || err.response?.data?.error || "Sorry, I couldn't process your request.";
+      setMessages((prev) => [...prev, { id: Date.now() + Math.random(), role: "assistant", text: errorMsg }]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (messages.length === 0) {
+    return (
+      <div className="flex flex-col h-full items-center bg-[#F8F9FB] justify-center relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#465182]/[0.015] rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#D67A1E]/[0.015] rounded-full blur-3xl" />
+        </div>
+        <div className="w-full max-w-2xl flex flex-col items-center relative z-10">
+          <div className="w-28 h-28 mb-5 rounded-full bg-gradient-to-br from-gray-50 to-gray-100/80 overflow-hidden ring-1 ring-gray-200/50 shadow-lg shadow-gray-200/30">
+            <img src={botImg} alt="Bot" className="w-full h-full object-cover brightness-[0.8] saturate-[0.9]" />
+          </div>
+          <h1 className="text-[28px] font-bold text-gray-800 mb-1.5 tracking-tight">College Rules</h1>
+          <p className="text-gray-400 text-[15px] mb-10">Ask about regulations, prerequisites, and policies</p>
+          <div className="w-full bg-white border border-gray-200/60 rounded-2xl shadow-lg shadow-gray-200/30 px-5 py-4 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                placeholder="Ask about college rules..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+                disabled={sending}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || sending}
+                className="w-9 h-9 rounded-xl bg-[#465182] flex items-center justify-center hover:bg-[#3a4570] transition-all duration-200 flex-shrink-0 shadow-md shadow-[#465182]/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {sending ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <FaPaperPlane size={12} className="text-white" />
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-4 justify-center">
+            <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 shadow-sm cursor-default">
+              <FaGraduationCap size={13} className="text-[#D67A1E]" />
+              Try: "ما المواد التي يجب انهائها قبل دراسة الخوارزميات؟"
+            </div>
+            <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200/60 bg-white text-[12px] font-medium text-gray-500 shadow-sm cursor-default">
+              <FaGraduationCap size={13} className="text-[#465182]" />
+              Try: "What are the prerequisites for Data Structures?"
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-[#F8F9FB]">
+      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br from-[#465182]/10 to-[#465182]/5 ring-1 ring-[#465182]/5">
+              {msg.role === "assistant" ? (
+                <FaGraduationCap size={13} className="text-[#465182]" />
+              ) : (
+                <FaUser size={12} className="text-[#465182]" />
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5 max-w-[68%]">
+              <div className={`px-4 py-3 text-sm leading-relaxed ${
+                msg.role === "assistant"
+                  ? "bg-white border border-gray-200/50 text-gray-700 shadow-sm shadow-gray-100/50 rounded-2xl rounded-tl-lg markdown-content"
+                  : "bg-[#465182] text-white rounded-2xl rounded-tr-lg shadow-md shadow-[#465182]/15 markdown-content-dark"
+              }`}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        ))}
+        {sending && (
+          <div className="flex gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#465182]/10 to-[#465182]/5 ring-1 ring-[#465182]/5">
+              <FaGraduationCap size={13} className="text-[#465182]" />
+            </div>
+            <div className="bg-white border border-gray-200/50 text-gray-400 shadow-sm shadow-gray-100/50 rounded-2xl rounded-tl-lg px-4 py-3 text-sm">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-[#465182]/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <div className="w-1.5 h-1.5 bg-[#465182]/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <div className="w-1.5 h-1.5 bg-[#465182]/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="px-8 pb-6 pt-2">
+        <div className="bg-white border border-gray-200/60 rounded-2xl shadow-lg shadow-gray-200/30 px-4 py-3 flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              placeholder="Ask about college rules..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+              disabled={sending}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || sending}
+              className="w-9 h-9 rounded-xl bg-[#465182] flex items-center justify-center hover:bg-[#3a4570] transition-all duration-200 flex-shrink-0 shadow-md shadow-[#465182]/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <FaPaperPlane size={12} className="text-white" />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1035,6 +1181,21 @@ const ChatBot = () => {
             New Chat
           </button>
 
+          <button
+            onClick={() => setActiveView("college")}
+            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 ${
+              activeView === "college"
+                ? "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
+                : "bg-gray-100 text-gray-500 hover:bg-gray-50 hover:text-indigo-600"
+            }`}
+          >
+            <FaGraduationCap size={12} />
+            College Rules
+            {activeView === "college" && (
+              <FaChevronRight size={9} className="ml-auto opacity-60" />
+            )}
+          </button>
+
         </div>
 
         <div className="mx-4 border-t border-gray-100" />
@@ -1174,6 +1335,9 @@ const ChatBot = () => {
               )}
               {activeView === "chat" && !isWelcome && (
                 <ChatView messages={messages} onSend={handleSend} sending={sending} courses={courses} coursesLoading={coursesLoading} />
+              )}
+              {activeView === "college" && (
+                <CollegeRulesChat />
               )}
             </>
           )}

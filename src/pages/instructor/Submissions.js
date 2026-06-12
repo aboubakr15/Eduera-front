@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { instructorApi } from "../../api/instructorApi";
 import {
@@ -6,6 +6,8 @@ import {
   FaFileAlt,
   FaChevronLeft,
   FaChevronRight,
+  FaRobot,
+  FaRedo,
 } from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
 
@@ -20,6 +22,8 @@ const InstructorSubmissions = () => {
   const [textToView, setTextToView] = useState("");
   const [gradeError, setGradeError] = useState(null);
   const [gradeSuccess, setGradeSuccess] = useState(null);
+  const [regradingId, setRegradingId] = useState(null);
+  const [expandedRubric, setExpandedRubric] = useState(null);
 
   const [page, setPage] = useState(1);
   const perPage = 8;
@@ -42,6 +46,22 @@ const InstructorSubmissions = () => {
     };
     fetchSubmissions();
   }, [assignmentId]);
+
+  const handleRegrade = async (submissionId) => {
+    setRegradingId(submissionId);
+    try {
+      const response = await instructorApi.regradeSubmission(submissionId);
+      setSubmissions(
+        submissions.map((s) =>
+          s.id === submissionId ? { ...s, ...response.data } : s,
+        ),
+      );
+    } catch (err) {
+      console.error("Regrade failed:", err);
+    } finally {
+      setRegradingId(null);
+    }
+  };
 
   const handleGrade = async (e) => {
     e.preventDefault();
@@ -194,8 +214,8 @@ const InstructorSubmissions = () => {
               </tr>
             ) : (
               paginated.map((s) => (
+                <Fragment key={s.id}>
                 <tr
-                  key={s.id}
                   className="border-b border-gray-100 transition-colors hover:bg-gray-50"
                 >
 
@@ -227,7 +247,11 @@ const InstructorSubmissions = () => {
                     </span>
                   </td>
                   <td className="py-3 px-2">
-                    {s.grade ? (
+                    {s.grading_result ? (
+                      <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                        {s.grading_result.total_score}/{s.grading_result.max_score} ({s.grading_result.percentage}%)
+                      </span>
+                    ) : s.grade ? (
                       <span className="text-sm font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
                         {parseInt(s.grade)}/100
                       </span>
@@ -258,7 +282,42 @@ const InstructorSubmissions = () => {
                           Text
                         </button>
                       )}
-                      {s.status !== "GRADED" && (
+                      {s.grading_result ? (
+                        <>
+                          <button
+                            onClick={() =>
+                              setExpandedRubric(
+                                expandedRubric === s.id ? null : s.id,
+                              )
+                            }
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 border border-purple-100 rounded-lg hover:bg-purple-100 transition-colors"
+                          >
+                            <FaRobot size={11} />
+                            {expandedRubric === s.id ? "Hide Rubric" : "Rubric"}
+                          </button>
+                          <button
+                            onClick={() => handleRegrade(s.id)}
+                            disabled={regradingId === s.id}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-opacity ${
+                              regradingId === s.id
+                                ? "opacity-60 cursor-not-allowed bg-gray-400"
+                                : "bg-[#282f4f] hover:opacity-90"
+                            }`}
+                          >
+                            {regradingId === s.id ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Regrading...
+                              </>
+                            ) : (
+                              <>
+                                <FaRedo size={11} />
+                                Regrade
+                              </>
+                            )}
+                          </button>
+                        </>
+                      ) : s.status !== "GRADED" ? (
                         <button
                           onClick={() => {
                             setSelectedSubmission(s);
@@ -269,10 +328,53 @@ const InstructorSubmissions = () => {
                           <FaCheck size={11} />
                           Grade
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </td>
                 </tr>
+                {expandedRubric === s.id && s.grading_result && (
+                  <tr key={`rubric-${s.id}`} className="bg-gray-50/50">
+                    <td colSpan={7} className="px-6 py-4">
+                      <div className="max-w-2xl space-y-3">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-gray-800">
+                            {s.grading_result.total_score}/{s.grading_result.max_score}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            ({s.grading_result.percentage}%)
+                          </span>
+                        </div>
+                        {s.grading_result.criteria_breakdown.map((c, i) => (
+                          <div
+                            key={i}
+                            className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm"
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="font-semibold text-gray-800">
+                                {c.criteria_name}
+                              </span>
+                              <span className="text-sm font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg">
+                                {c.points_awarded}/{c.max_points}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-2">
+                              {c.justification}
+                            </p>
+                          </div>
+                        ))}
+                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                          <p className="text-xs font-semibold text-blue-700 mb-1">
+                            AI Feedback
+                          </p>
+                          <p className="text-sm text-blue-900">
+                            {s.grading_result.feedback_summary}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))
             )}
           </tbody>

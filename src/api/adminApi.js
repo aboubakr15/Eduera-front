@@ -24,6 +24,9 @@ export const adminApi = {
   createAnnouncement: (data) => api.post('/admin/announcements/', data),
    
   uploadMaterial: (data) => api.post('/admin/materials/upload/', data),
+  uploadCollegeInstructions: (formData) => api.post('/admin/college-instructions/upload/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
 
   generateQuiz: (data) => api.post('/admin/chat/generate-quiz/', data),
   generatePresentation: (data) => api.post('/admin/chat/generate-presentation/', data),

@@ -9,6 +9,7 @@ import {
   FaArrowRight,
   FaCommentDots,
   FaDownload,
+  FaRobot,
 } from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
 
@@ -25,6 +26,7 @@ const StudentAssignments = () => {
 
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedAssignmentId, setSelectedAssignmentId] = useState("");
+  const [submittedText, setSubmittedText] = useState("");
 
   const navigate = useNavigate();
 
@@ -78,29 +80,49 @@ const StudentAssignments = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedAssignmentId || !selectedFile) {
-      setSubmitError("Please select an assignment and upload a file.");
-      return;
-    }
-
     setSubmitError(null);
     setSubmitting(true);
 
     try {
-      const formData = new FormData();
-      formData.append("assignment_id", selectedAssignmentId);
-      formData.append("file", selectedFile);
+      const selectedAssignment = assignments.find(
+        (a) => a.id === parseInt(selectedAssignmentId),
+      );
+      const isRubricGraded = selectedAssignment?.is_ai_graded;
 
-      const response = await studentApi.submitAssignment(formData);
-
-      if (response.data) {
-        setSubmissions([response.data, ...submissions]);
+      if (isRubricGraded) {
+        if (!submittedText.trim()) {
+          setSubmitError("Please enter your answer text.");
+          setSubmitting(false);
+          return;
+        }
+        const response = await studentApi.rubricSubmit({
+          assignment_id: parseInt(selectedAssignmentId),
+          submitted_text: submittedText,
+        });
+        const newSubmission = response.data?.submission || response.data;
+        if (newSubmission) {
+          setSubmissions([newSubmission, ...submissions]);
+        }
+      } else {
+        if (!selectedFile) {
+          setSubmitError("Please select an assignment and upload a file.");
+          setSubmitting(false);
+          return;
+        }
+        const formData = new FormData();
+        formData.append("assignment_id", selectedAssignmentId);
+        formData.append("file", selectedFile);
+        const response = await studentApi.submitAssignment(formData);
+        if (response.data) {
+          setSubmissions([response.data, ...submissions]);
+        }
       }
 
       setShowSubmitModal(false);
       setSelectedFile(null);
       setSelectedCourseId("");
       setSelectedAssignmentId("");
+      setSubmittedText("");
     } catch (err) {
       console.error("Failed to submit:", err);
       const errorMsg =
@@ -253,7 +275,12 @@ const StudentAssignments = () => {
                     {s.status}
                   </span>
 
-                  {s.status === "GRADED" && s.grade != null && (
+                  {s.status === "GRADED" && s.grading_result && (
+                    <span className="text-sm font-bold text-white bg-emerald-500 px-3 py-1 rounded-lg shadow-sm">
+                      {s.grading_result.total_score}/{s.grading_result.max_score}
+                    </span>
+                  )}
+                  {s.status === "GRADED" && !s.grading_result && s.grade != null && (
                     <span className="text-sm font-bold text-white bg-emerald-500 px-3 py-1 rounded-lg shadow-sm">
                       {s.grade}/100
                     </span>
@@ -290,6 +317,44 @@ const StudentAssignments = () => {
                     </p>
                     <p className="text-sm text-gray-500 leading-relaxed">
                       {s.notes}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {s.grading_result && (
+                <div className="mt-4 pt-4 border-t border-dashed border-gray-200 space-y-3">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-bold text-gray-800">
+                      {s.grading_result.total_score}/{s.grading_result.max_score}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      ({s.grading_result.percentage}%)
+                    </span>
+                  </div>
+                  {s.grading_result.criteria_breakdown.map((c, i) => (
+                    <div
+                      key={i}
+                      className="bg-white rounded-xl p-3 border border-gray-100"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-800 text-sm">
+                          {c.criteria_name}
+                        </span>
+                        <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg">
+                          {c.points_awarded}/{c.max_points}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {c.justification}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                    <p className="text-xs font-semibold text-blue-700 mb-1">
+                      AI Feedback
+                    </p>
+                    <p className="text-sm text-blue-900">
+                      {s.grading_result.feedback_summary}
                     </p>
                   </div>
                 </div>
@@ -365,6 +430,24 @@ const StudentAssignments = () => {
                 )}
               </div>
 
+              {assignments.find((a) => a.id === parseInt(selectedAssignmentId))?.is_ai_graded ? (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                    Your Answer
+                  </label>
+                  <textarea
+                    value={submittedText}
+                    onChange={(e) => setSubmittedText(e.target.value)}
+                    className="w-full text-sm border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 resize-none bg-gray-50/50"
+                    rows={8}
+                    placeholder="Type your answer here..."
+                    required
+                  />
+                  <p className="text-xs text-purple-500 mt-1.5 flex items-center gap-1">
+                    <FaRobot size={10} /> This assignment uses AI grading with a rubric.
+                  </p>
+                </div>
+              ) : (
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
                   Upload Your Solution
@@ -402,6 +485,7 @@ const StudentAssignments = () => {
                   )}
                 </div>
               </div>
+              )}
 
               <div className="flex gap-3 pt-4 border-t border-gray-100 mt-6">
                 <button
@@ -411,6 +495,7 @@ const StudentAssignments = () => {
                     setSelectedFile(null);
                     setSelectedCourseId("");
                     setSelectedAssignmentId("");
+                    setSubmittedText("");
                     setSubmitError(null);
                   }}
                   className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"

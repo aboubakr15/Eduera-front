@@ -35,12 +35,15 @@ export const studentApi = {
   deleteConversation: (id) => api.delete(`/api/student/conversations/${id}/`),
   
   getAssignments: () => api.get('/api/student/assignments/'),
+  rubricSubmit: (data) => api.post('/api/student/rubric-submit/', data),
 
   getCourseChat: (courseId) => api.get(`/api/student/courses/${courseId}/chat/`),
   sendCourseMessage: (courseId, data) => api.post(`/api/student/courses/${courseId}/chat/`, data),
 
   generateQuiz: (data) => api.post('/api/student/chat/generate-quiz/', data),
   generatePresentation: (data) => api.post('/api/student/chat/generate-presentation/', data),
+
+  sendSystemInstructionsMessage: (data) => api.post('/api/student/chat/system-instructions/', data),
 
   getNotifications: () => api.get('/api/student/notifications/'),
   markNotificationRead: (id, data) => api.patch(`/api/student/notifications/${id}/`, data),

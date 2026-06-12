@@ -19,9 +19,11 @@ export const instructorApi = {
   getAssignmentDetails: (id) => api.get(`/api/professor/assignments/${id}/`),
   updateAssignment: (id, data) => api.patch(`/api/professor/assignments/${id}/`, data),
   deleteAssignment: (id) => api.delete(`/api/professor/assignments/${id}/`),
+  createRubricAssignment: (data) => api.post('/api/professor/rubric-assignments/', data),
   
   getSubmissions: (params) => api.get('/api/professor/submissions/', { params }),
   gradeSubmission: (id, data) => api.post(`/api/professor/submissions/${id}/grade/`, data),
+  regradeSubmission: (id) => api.post(`/api/professor/submissions/${id}/regrade/`),
   
   getStudents: (params) => api.get('/api/professor/students/', { params }),
   

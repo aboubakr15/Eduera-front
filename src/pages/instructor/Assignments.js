@@ -8,6 +8,7 @@ import {
   FaCalendarAlt,
   FaTrash,
   FaExclamationTriangle,
+  FaRobot,
 } from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
 
@@ -34,6 +35,10 @@ const InstructorAssignments = () => {
     total_points: 10,
     assignment_type: "REPORT",
   });
+  const [isAiGraded, setIsAiGraded] = useState(false);
+  const [rubricCriteria, setRubricCriteria] = useState([{ criteria_name: "", max_points: "", description: "" }]);
+  const [modelAnswerText, setModelAnswerText] = useState("");
+  const [gradingType, setGradingType] = useState("SUBJECTIVE");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,23 +78,69 @@ const InstructorAssignments = () => {
     }
   };
 
+  const addCriterion = () => {
+    setRubricCriteria([...rubricCriteria, { criteria_name: "", max_points: "", description: "" }]);
+  };
+
+  const removeCriterion = (index) => {
+    setRubricCriteria(rubricCriteria.filter((_, i) => i !== index));
+  };
+
+  const updateCriterion = (index, field, value) => {
+    const updated = [...rubricCriteria];
+    updated[index][field] = value;
+    setRubricCriteria(updated);
+  };
+
+  const resetRubricState = () => {
+    setIsAiGraded(false);
+    setRubricCriteria([{ criteria_name: "", max_points: "", description: "" }]);
+    setModelAnswerText("");
+    setGradingType("SUBJECTIVE");
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const formData = new FormData();
-      Object.keys(newAssignment).forEach((key) => {
-        if (newAssignment[key] !== "" && newAssignment[key] !== null) {
-          formData.append(key, newAssignment[key]);
+      if (isAiGraded) {
+        const validCriteria = rubricCriteria.filter(c => c.criteria_name.trim() && c.max_points);
+        if (validCriteria.length === 0) {
+          setSubmitError("Add at least one rubric criterion with a name and max points.");
+          setSubmitting(false);
+          return;
         }
-      });
-      if (selectedFile) {
-        formData.append("file", selectedFile);
-      }
-      const response = await instructorApi.createAssignment(formData);
-      if (response.data) {
-        setAssignments([response.data, ...assignments]);
+        const payload = {
+          title: newAssignment.title,
+          course_offering: newAssignment.course_offering,
+          due_date: newAssignment.due_date,
+          grading_type: gradingType,
+          rubric: validCriteria.map(c => ({
+            criteria_name: c.criteria_name,
+            max_points: parseFloat(c.max_points),
+            description: c.description,
+          })),
+          model_answer_text: modelAnswerText,
+        };
+        const response = await instructorApi.createRubricAssignment(payload);
+        if (response.data) {
+          setAssignments([response.data, ...assignments]);
+        }
+      } else {
+        const formData = new FormData();
+        Object.keys(newAssignment).forEach((key) => {
+          if (newAssignment[key] !== "" && newAssignment[key] !== null) {
+            formData.append(key, newAssignment[key]);
+          }
+        });
+        if (selectedFile) {
+          formData.append("file", selectedFile);
+        }
+        const response = await instructorApi.createAssignment(formData);
+        if (response.data) {
+          setAssignments([response.data, ...assignments]);
+        }
       }
       setShowModal(false);
       setSelectedFile(null);
@@ -101,6 +152,7 @@ const InstructorAssignments = () => {
         total_points: 10,
         assignment_type: "REPORT",
       });
+      resetRubricState();
     } catch (err) {
       console.error("Failed to create:", err);
       const errorMsg =
@@ -274,6 +326,11 @@ const InstructorAssignments = () => {
                 <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
                   {a.assignment_type}
                 </span>
+                {a.is_ai_graded && (
+                  <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                    <FaRobot size={10} /> AI
+                  </span>
+                )}
                 <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
                   {parseInt(a.total_points)} Points
                 </span>
@@ -487,6 +544,119 @@ const InstructorAssignments = () => {
                 </div>
               </div>
 
+              {/* AI-Graded Rubric Section */}
+              <div className="border-t border-gray-100 pt-4 mt-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isAiGraded}
+                    onChange={(e) => {
+                      setIsAiGraded(e.target.checked);
+                      if (!e.target.checked) resetRubricState();
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-[#282f4f] focus:ring-[#282f4f]"
+                  />
+                  <span className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                    <FaRobot size={14} className="text-purple-500" /> AI-Graded (Rubric)
+                  </span>
+                </label>
+              </div>
+
+              {isAiGraded && (
+                <div className="space-y-4 pl-2 border-l-2 border-purple-200">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                      Grading Type
+                    </label>
+                    <select
+                      value={gradingType}
+                      onChange={(e) => setGradingType(e.target.value)}
+                      className="w-full text-sm border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 bg-gray-50/50"
+                    >
+                      <option value="SUBJECTIVE">Subjective (Text/Essay)</option>
+                      <option value="OBJECTIVE">Objective (Code)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                      Rubric Criteria
+                    </label>
+                    <div className="space-y-3">
+                      {rubricCriteria.map((criterion, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-50/50 border border-gray-200 rounded-xl p-4 space-y-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 space-y-2">
+                              <input
+                                type="text"
+                                placeholder="Criterion name"
+                                value={criterion.criteria_name}
+                                onChange={(e) =>
+                                  updateCriterion(index, "criteria_name", e.target.value)
+                                }
+                                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 bg-white"
+                              />
+                              <input
+                                type="number"
+                                placeholder="Max points"
+                                value={criterion.max_points}
+                                onChange={(e) =>
+                                  updateCriterion(index, "max_points", e.target.value)
+                                }
+                                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 bg-white"
+                              />
+                              <textarea
+                                placeholder="Description of what this criterion measures..."
+                                value={criterion.description}
+                                onChange={(e) =>
+                                  updateCriterion(index, "description", e.target.value)
+                                }
+                                rows={2}
+                                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 resize-none bg-white"
+                              />
+                            </div>
+                            {rubricCriteria.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeCriterion(index)}
+                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                title="Remove criterion"
+                              >
+                                <FaTrash size={12} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addCriterion}
+                      className="mt-2 flex items-center gap-1.5 text-sm text-purple-600 font-medium hover:text-purple-700 transition-colors"
+                    >
+                      <FaPlus size={11} /> Add Criterion
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                      Model Answer (Ground Truth)
+                    </label>
+                    <textarea
+                      value={modelAnswerText}
+                      onChange={(e) => setModelAnswerText(e.target.value)}
+                      className="w-full text-sm border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 resize-none bg-gray-50/50"
+                      rows={4}
+                      placeholder="Provide the ideal answer that the AI will use as a reference for grading..."
+                    />
+                  </div>
+                </div>
+              )}
+
+              {!isAiGraded && (
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
                   Assignment File (Optional)
@@ -517,6 +687,7 @@ const InstructorAssignments = () => {
                   )}
                 </div>
               </div>
+              )}
 
               <div className="flex gap-3 pt-4 border-t border-gray-100 mt-6">
                 <button
@@ -524,6 +695,7 @@ const InstructorAssignments = () => {
                   onClick={() => {
                     setShowModal(false);
                     setSubmitError(null);
+                    resetRubricState();
                   }}
                   className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
