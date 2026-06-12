@@ -633,6 +633,59 @@ const ChatView = ({ messages, onSend, selectedCourse }) => {
                   {msg.text}
                 </ReactMarkdown>
               </div>
+              {msg.sources && msg.sources.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 px-1">
+                  {msg.sources.map((src, i) => {
+                    if (typeof src === "string") {
+                      const pillClass = "inline-flex items-center gap-1 text-[10px] font-medium text-[#D67A1E] bg-[#D67A1E]/[0.06] border border-[#D67A1E]/10 px-2 py-0.5 rounded-full";
+                      const isUrl = src.startsWith("http");
+                      const pill = (
+                        <span className={pillClass}>
+                          <FaBook size={8} />
+                          {isUrl ? src.split("/").pop() : src}
+                          {isUrl && <span className="text-[8px] opacity-60">↗</span>}
+                        </span>
+                      );
+                      return isUrl
+                        ? <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="no-underline">{pill}</a>
+                        : <span key={i}>{pill}</span>;
+                    }
+
+                    const meta = src.metadata || {};
+                    const sourceTitle = meta.file_name || meta.source?.split("/").pop() || src.title || src.content?.slice(0, 60) || "";
+                    const sourceUrl = meta.source?.startsWith("http") ? meta.source : null;
+                    const page = meta.page || src.page || null;
+                    if (!sourceTitle) return null;
+
+                    const pillClass = "inline-flex items-center gap-1 text-[10px] font-medium text-[#D67A1E] bg-[#D67A1E]/[0.06] border border-[#D67A1E]/10 px-2 py-0.5 rounded-full hover:bg-[#D67A1E]/[0.1] transition-colors";
+                    const pill = (
+                      <span className={pillClass}>
+                        <FaBook size={8} />
+                        {sourceTitle}
+                        {page != null && ` p.${page}`}
+                        {sourceUrl && <span className="text-[8px] opacity-60">↗</span>}
+                      </span>
+                    );
+
+                    return sourceUrl
+                      ? <a key={i} href={sourceUrl} target="_blank" rel="noopener noreferrer" className="no-underline">{pill}</a>
+                      : <span key={i}>{pill}</span>;
+                  })}
+                </div>
+              )}
+              {msg.presentationPath && (
+                <div className="px-1">
+                  <a
+                    href={msg.presentationPath}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#D67A1E] bg-[#D67A1E]/[0.06] border border-[#D67A1E]/10 px-3 py-1.5 rounded-lg hover:bg-[#D67A1E]/[0.1] transition-colors"
+                  >
+                    <FaDownload size={10} />
+                    Download Presentation
+                  </a>
+                </div>
+              )}
               {msg.role === "assistant" && isPresentationBlueprint(msg.text) && !msg.presentationPath && (
                 <div className="px-1 space-y-2">
                   <div className="flex gap-2">
@@ -799,7 +852,7 @@ const ChatBot = () => {
       const data = response.data;
       const conversationId = data.conversation_id;
       const aiContent = data.ai_message?.content || data.answer || data.message || JSON.stringify(data);
-      const sources = data.ai_message?.sources_used || [];
+      const sources = data.ai_message?.sources_used || data.sources_used || [];
       const pptxMatch = aiContent.match(/([\w\/\-_.]+\.pptx)/);
       const presentationPath = data.presentation_path || (pptxMatch ? (pptxMatch[1].startsWith("http") ? pptxMatch[1] : `${BACKEND_URL}/${pptxMatch[1].replace(/^\//, "")}`) : null);
 

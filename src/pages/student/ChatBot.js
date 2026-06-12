@@ -613,7 +613,7 @@ const ChatView = ({ messages, onSend, sending, courses, coursesLoading }) => {
                     }
 
                     const meta = src.metadata || {};
-                    const sourceTitle = meta.file_name || meta.source?.split("/").pop() || src.content?.slice(0, 60) || "";
+                    const sourceTitle = meta.file_name || meta.source?.split("/").pop() || src.title || src.content?.slice(0, 60) || "";
                     const sourceUrl = meta.source?.startsWith("http") ? meta.source : null;
                     const page = meta.page || src.page || null;
                     if (!sourceTitle) return null;
@@ -838,7 +838,7 @@ const ChatBot = () => {
 
       const conversationId = data.conversation_id;
       const aiContent = data.ai_message?.content || data.answer || data.message || JSON.stringify(data);
-      const sources = data.ai_message?.sources_used || [];
+      const sources = data.ai_message?.sources_used || data.sources_used || [];
       const pptxMatch = aiContent.match(/([\w\/\-_.]+\.pptx)/);
       const presentationPath = data.presentation_path || (pptxMatch ? (pptxMatch[1].startsWith("http") ? pptxMatch[1] : `${BACKEND_URL}/${pptxMatch[1].replace(/^\//, "")}`) : null);
 
